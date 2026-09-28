@@ -4,16 +4,16 @@
 
 ## Nguyên tắc sắp xếp
 
-Mỗi mốc tạo một hành vi dùng được từ UI đến database/API. Hoàn thành Explorer slice sớm; đưa fake-provider Builder vào trước live tuning; thêm auth production trước mở generation thật. Không làm toàn bộ frontend rồi mới backend. Data curation bắt đầu sớm và tiếp tục mỗi tuần.
+Mỗi mốc tạo một hành vi dùng được từ UI đến database/API. Hoàn thành Explorer slice sớm; kiểm thử Builder qua Gemini adapter với transport fixtures trước live tuning; thêm auth production trước mở generation public. Không làm toàn bộ frontend rồi mới backend. Data curation bắt đầu sớm và tiếp tục mỗi tuần.
 
 Nếu chỉ có 4 tuần, mục tiêu khả thi là internal beta 40–60 tools và 3 journeys, không gọi đó là release đạt toàn bộ PRD. Muốn release đủ 100–150 tools và các quality gates cần giữ tuần 5–6 hoặc điều chỉnh lịch theo tốc độ thực tế.
 
 ## M0 — Chốt baseline và scaffold, đầu tuần 1
 
-- **Mục tiêu:** loại bỏ blockers provider/auth/budget và có môi trường chạy/test được.
+- **Mục tiêu:** chốt provider/auth và có môi trường chạy/test được. TASK-001 hoàn tất review; TASK-002 dùng Gemini adapter thật, transport-isolated CI và live smoke opt-in.
 - **Deliverables:** TASK-001, TASK-002; ADR decisions, versions đã pin, `.env.example`, local setup/CI skeleton.
 - **Dependencies:** bộ spec hiện tại; chủ dự án chốt các lựa chọn bắt buộc.
-- **Acceptance:** local web/API health và DB kết nối được; fake provider chạy không cần paid key; secret không lọt client; ghi commands thực tế.
+- **Acceptance:** local web/API health và DB kết nối được; Gemini adapter có contract tests không gọi network và live smoke opt-in dùng API key thật; secret không lọt client; ghi commands thực tế.
 - **Rủi ro:** Docker/WSL RAM, OIDC audience không phù hợp. Thử cấu hình nhỏ, xử lý trước khi phát triển auth-dependent flow.
 - **DoD:** setup tái lập được, ADR trạng thái đúng, task có bằng chứng kiểm tra. Không coi scaffolding là feature hoàn thành.
 
@@ -40,7 +40,7 @@ Nếu chỉ có 4 tuần, mục tiêu khả thi là internal beta 40–60 tools 
 - **Mục tiêu:** nhập mục tiêu và nhận complete/partial/no_match/clarification có căn cứ trên UI.
 - **Deliverables:** TASK-010, TASK-011, TASK-013, TASK-014, TASK-015; bắt đầu TASK-016 để mở authenticated live flow.
 - **Dependencies:** M2; output schema và evaluation fixtures.
-- **Acceptance:** fake-provider E2E đi qua backend validation; live mode chỉ bật với auth/quota/budget guards; invalid IDs, stale evidence, prompt injection bị chặn; workflow unverified có nhãn.
+- **Acceptance:** transport-isolated E2E đi qua Gemini adapter và backend validation; public live mode chỉ bật với auth/quota/budget guards; invalid IDs, stale evidence, prompt injection bị chặn; workflow unverified có nhãn.
 - **Rủi ro:** provider output thất thường, latency/cost. Giữ một repair, context caps; lỗi technical trả error chứ không giả no_match.
 - **DoD:** Journey B offline kiểm chứng; nếu chưa auth/live eval thì ghi rõ chưa đạt live release gate, không mở public endpoint tạm không auth.
 
@@ -73,6 +73,6 @@ Nếu chỉ có 4 tuần, mục tiêu khả thi là internal beta 40–60 tools 
 
 ## Definition of Done dùng chung
 
-Scope/acceptance task đạt; checks liên quan đã chạy với kết quả được ghi; lỗi ownership/constraint/schema không còn; docs cập nhật đúng contract; không secrets; reviewer/chủ dự án có thể tái hiện. Fake-provider test không thay live AI evaluation, design review không thay integration test.
+Scope/acceptance task đạt; checks liên quan đã chạy với kết quả được ghi; lỗi ownership/constraint/schema không còn; docs cập nhật đúng contract; không secrets; reviewer/chủ dự án có thể tái hiện. Transport-isolated test không thay live AI evaluation, design review không thay integration test.
 
 Hàng tuần kiểm tra task blocked, tốc độ và curation count; điều chỉnh tuần tiếp theo dựa trên số liệu. Sau MVP mới xét comparison/workflow visualization; multi-agent không là bước tiếp theo mặc định.

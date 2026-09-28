@@ -27,7 +27,7 @@ Ngày lập: 28/09/2026. `Accepted` nghĩa baseline kiến trúc đã được y
 - **Decision:** LLM extraction/generation và embeddings qua API; adapter chuẩn hóa schema/usage/errors; model/provider cấu hình được.
 - **Rationale:** Giảm tài nguyên local; có thể đánh giá provider sau mà không đổi domain contracts.
 - **Alternatives:** Local inference, fine-tuning, khóa trực tiếp SDK provider vào domain.
-- **Consequences:** Phụ thuộc mạng, cost, retention và provider latency; cần budget guard, fake adapter và live eval có giới hạn. Provider cụ thể vẫn mở.
+- **Consequences:** Phụ thuộc mạng, cost, retention và provider latency; cần budget guard, transport-isolated tests và live eval có giới hạn. Provider cụ thể được chốt sau tại ADR-011/012.
 
 ## ADR-004 — Documentation-first và scoped tasks
 
@@ -58,18 +58,18 @@ Ngày lập: 28/09/2026. `Accepted` nghĩa baseline kiến trúc đã được y
 
 ## ADR-007 — OIDC/BFF và login trước generation
 
-- **Status:** Proposed; chốt TASK-001 trước TASK-010/TASK-016.
-- **Context:** Save cần ownership; API AI cần hạn chế abuse và chi phí. Chưa có provider identity được chọn.
-- **Decision đề xuất:** OIDC provider, session cookie tại Next.js BFF, Bearer token được FastAPI xác minh; Explorer public, Build và My Stack yêu cầu auth.
+- **Status:** Accepted, 28/09/2026; chủ dự án chọn Auth0 Free + Google Login.
+- **Context:** Save cần ownership; API AI cần hạn chế abuse và chi phí. Provider identity đã chọn: Auth0 Free; login bằng Google.
+- **Decision:** Auth0 OIDC + Google Login, session cookie tại Next.js BFF, Bearer token được FastAPI xác minh; Explorer public, Build và My Stack yêu cầu auth.
 - **Rationale:** Không tự triển khai password security, có identity để quota và private generation results.
 - **Alternatives:** Anonymous Build với IP quota/captcha; backend-managed password login; browser giữ access token.
 - **Consequences:** Tăng ma sát Build; cần token audience/JWKS/session/CSRF thật. Nếu chọn anonymous Build phải cập nhật PRD, flows, API, ownership và abuse control trước code.
 
 ## ADR-008 — Curated files và import CLI
 
-- **Status:** Proposed; chốt TASK-001, thực hiện TASK-005.
+- **Status:** Accepted, 28/09/2026; chủ dự án chốt curated files + CLI, thực hiện TASK-005.
 - **Context:** 100–150 tools cần chất lượng hơn số lượng; chưa có nhu cầu admin dashboard.
-- **Decision đề xuất:** Maintainer biên tập file, verify nguồn thủ công, dry-run rồi atomic import; reindex bằng CLI.
+- **Decision:** Maintainer biên tập file, verify nguồn thủ công, dry-run rồi atomic import; reindex bằng CLI.
 - **Rationale:** Review/version-control được, tránh xây admin UI/crawler sớm.
 - **Alternatives:** Admin web app, tự scrape, sửa DB thủ công không validation.
 - **Consequences:** Tốn thời gian biên tập, cần hướng dẫn import/freshness. Catalog data không được giả là verified chỉ vì có URL.
@@ -92,6 +92,24 @@ Ngày lập: 28/09/2026. `Accepted` nghĩa baseline kiến trúc đã được y
 - **Alternatives:** Chỉ last_verified_at cấp tool; mọi fact là text description; hoàn toàn để LLM judge grounding.
 - **Consequences:** Nhiều validation hơn và một số request phải no_match. TTL 30/90 ngày là policy cần đánh giá lại, không số liệu thị trường. Tài liệu [Data model](../architecture/DATA_MODEL.md) quy định chi tiết.
 
-## Các lựa chọn chưa quyết định
+## ADR-011 — Google Gemini cho LLM và embedding
 
-LLM/embedding model và dimension, exact dependency versions, identity provider, hosting/region, ngân sách, retention production. Theo dõi OQ-001 đến OQ-006 tại [PRD](../product/PRD.md). Chốt lựa chọn bằng evidence phù hợp ở thời điểm triển khai; bộ spec hiện không yêu cầu mua dịch vụ hoặc cài dependencies.
+- **Status:** Accepted, 28/09/2026; phạm vi quyết định là provider.
+- **Bổ sung sau đó:** ADR-012 chốt model/dimension/API offering và UI. Phần consequences bên dưới ghi trạng thái tại thời điểm chỉ chọn provider, không phải blocker model hiện tại.
+- **Context:** Chủ dự án chọn Google Gemini cho cả LLM và embedding trong TASK-001.
+- **Decision:** Dùng Google Gemini cho hai adapters AI, bổ sung lựa chọn cụ thể cho ADR-003; domain contracts vẫn độc lập provider.
+- **Consequences:** Đề xuất OpenAI trước đó không còn áp dụng. Model, dimension, API offering (Gemini Developer API hay Vertex AI), tier, region/retention và budget chưa được chủ dự án chốt. Xem [Baseline review](BASELINE_REVIEW.md) để review cấu hình đề xuất; live AI tiếp tục bị khóa khi chưa đủ budget/tariff/guards.
+
+## ADR-012 — Model, chế độ test và UI song ngữ
+
+- **Status:** Accepted, 28/09/2026; bổ sung ADR-011 theo quyết định mới của chủ dự án.
+- **Decision:** Gemini Developer API; LLM `gemini-3.5-flash-lite`; embedding `gemini-embedding-2` với `output_dimensionality=1536`. Pin model key, dimension và pipeline version; schema dùng `vector(1536)`.
+- **Budget:** Chủ dự án chấp nhận chi phí Gemini thực tế cho development/test dựa trên kinh nghiệm với các sản phẩm AI trước; chưa đặt monthly estimate. Ngân sách deployment chốt trước TASK-025 và guard runtime triển khai ở TASK-015. Không áp dụng đề xuất 10 USD/tháng trước đó. Unit/CI không gọi Gemini; live smoke bắt buộc có API key và opt-in rõ ràng, dùng tariff/usage thật.
+- **UI:** Hỗ trợ English (`en`) và tiếng Việt (`vi`) cho navigation, controls, trạng thái và thông báo. Technical identifiers giữ nguyên. Nội dung catalog, evidence, user input và AI result giữ ngôn ngữ gốc; không tự dịch factual claims. Locale chỉ là UI preference, chưa thêm field/endpoint backend. Mặc định `vi`, có chọn `English / Tiếng Việt` và lưu preference trên browser là quy ước triển khai ban đầu, có thể điều chỉnh khi làm frontend.
+- **Consequences:** TASK-002 triển khai Gemini adapter thật, không có fake provider; tests dùng injected transport/response fixtures và live smoke opt-in. TASK-006/013/019 cần copy đủ hai locale, kiểm tra đổi ngôn ngữ không mất filters/draft. Chất lượng AI và production budget chưa được nghiệm thu.
+
+## Các lựa chọn còn mở sau TASK-001 review
+
+Review TASK-001 ngày 28/09/2026: [quyết định và checklist cấu hình](BASELINE_REVIEW.md). Auth0/curation đã chốt ở ADR-007/008; provider/model/UI ở ADR-011/012. Chủ dự án cho phép development/test phát sinh chi phí Gemini thật; production budget/tier/region/retention vẫn phải chốt trước staging. ADR-009/010 vẫn theo TASK-002/003.
+
+Còn mở: exact dependency versions, tenant Auth0/region thực tế, Gemini tier/region/retention, ngân sách test trước live, hosting/budget/retention production. Lịch sử ADR-011 chỉ chốt provider; ADR-012 bổ sung model/dimension đã duyệt. Theo dõi OQ-001 đến OQ-006 tại [PRD](../product/PRD.md). Chốt lựa chọn bằng evidence phù hợp ở thời điểm triển khai; bộ spec hiện không yêu cầu mua dịch vụ hoặc cài dependencies.

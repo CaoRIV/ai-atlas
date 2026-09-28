@@ -26,7 +26,7 @@ Chưa có nghiên cứu người dùng hoặc số liệu thị trường trong 
 
 **Save:** đăng nhập → lưu kết quả hoặc tạo stack thủ công → đổi tools/roles → mở lại stack của mình. Stack cá nhân là private trong MVP.
 
-MVP có catalog 100–150 records biên tập; quản trị bằng file dữ liệu và CLI import, không cần admin UI. Cho phép Explorer anonymous; generation và lưu stack yêu cầu đăng nhập trong baseline đề xuất ADR-007 để kiểm soát chi phí. Cần chốt ADR này ở TASK-001 trước implementation phụ thuộc.
+MVP có catalog 100–150 records biên tập; quản trị bằng file dữ liệu và CLI import, không cần admin UI. Cho phép Explorer anonymous; generation và lưu stack yêu cầu đăng nhập theo ADR-007 đã Accepted tại TASK-001 để kiểm soát chi phí.
 
 ## 4. Functional requirements
 
@@ -44,7 +44,7 @@ MVP có catalog 100–150 records biên tập; quản trị bằng file dữ li�
 | FR-010 | Tạo thủ công và sửa stack | Đổi title/purpose, thêm/xóa/thay tool, đổi role/order; transaction cập nhật toàn bộ; phát hiện concurrent edit; sửa tay không được gắn nhãn đã AI kiểm chứng |
 | FR-011 | Biên tập, import và kiểm chứng catalog | Dry-run chỉ ra lỗi trước ghi DB; import lặp theo stable ID không nhân bản; thay facts làm invalid evidence/embeddings liên quan; không public records draft/archived |
 | FR-012 | Evaluation và observability cơ bản | Chạy bộ scenario cố định, xuất các metric theo AI spec; request ID nối logs với response; không log prompt cá nhân mặc định |
-| FR-013 | Điều hướng và khả năng tiếp cận | Ba journey hoạt động bằng keyboard; loading/empty/error có thông báo; layout dùng được ở viewport 360px và desktop |
+| FR-013 | Điều hướng và khả năng tiếp cận | Ba journey hoạt động bằng keyboard; loading/empty/error có thông báo; layout dùng được ở viewport 360px và desktop; UI English/tiếng Việt đầy đủ cho controls và states, đổi locale giữ filters/draft |
 
 Không yêu cầu seed phải có thông tin giá hoặc API đã biết cho mọi tool. Record được publish với `unknown` nếu minh bạch; không eligible khi thuộc tính đó là hard constraint.
 
@@ -55,7 +55,7 @@ Các ngưỡng là **release targets ban đầu**, phải ghi environment/datase
 | ID | Yêu cầu | Cách kiểm chứng |
 |---|---|---|
 | NFR-001 | API đọc catalog p95 ≤ 800ms phía server | 100 requests, concurrency 5, catalog 150 tools, môi trường staging đã ghi cấu hình; không tính cold start, báo cold start riêng |
-| NFR-002 | Generation có timeout tổng 30s; p95 ≤ 20s là mục tiêu | Đo ≥ 30 live runs trên provider/model đã chọn; timeout trả lỗi, không treo UI; local fake-provider không chứng minh live latency |
+| NFR-002 | Generation có timeout tổng 30s; p95 ≤ 20s là mục tiêu | Đo ≥ 30 live runs trên provider/model đã chọn; timeout trả lỗi, không treo UI; transport-isolated unit/E2E không chứng minh live latency |
 | NFR-003 | Hard-constraint và identity validation fail closed | 100% kết quả được phát ra vượt validator; adversarial suite chặn unknown/ID ngoài catalog/owner sai; báo cả abstention rate để tránh đạt bằng cách từ chối mọi request |
 | NFR-004 | Bảo vệ dữ liệu và secrets | Không secret trong client/repo/log; kiểm tra cross-user, token sai/hết hạn, SQL injection, prompt injection và rate limits |
 | NFR-005 | Local phù hợp máy khoảng 8GB RAM | Chạy host frontend/backend, chỉ DB trong container; không local LLM; ghi peak memory và trải nghiệm 3 journeys trên máy mục tiêu trước release |
@@ -78,13 +78,15 @@ AI Comparison nâng cao và interactive workflow editor được hoãn. Schema v
 
 ## 8. Assumptions và câu hỏi mở
 
+Review TASK-001 ngày 28/09/2026: [Baseline review](../planning/BASELINE_REVIEW.md) ghi quyết định và checklist cấu hình. Chủ dự án sau đó bỏ fake provider và cho phép development/test dùng chi phí Gemini thật; unit/CI vẫn không gọi external API. Production budget/tier/region/retention còn mở trước staging/deploy.
+
 | ID | Giả định/điểm cần quyết định | Chủ trì, hạn chốt | Phương án tạm dùng |
 |---|---|---|---|
-| OQ-001 | LLM và embedding provider/model, region, retention? | Chủ dự án, TASK-001 | Adapter cấu hình; không chọn tên model hoặc giá chưa xác minh |
-| OQ-002 | Identity provider, login method, generation có auth? | Chủ dự án, TASK-001 | OIDC + BFF session, login trước Build theo ADR-007 |
-| OQ-003 | Ngân sách AI/infrastructure tối đa tháng? | Chủ dự án, TASK-001 | Live AI bị tắt đến khi có budget và tariff config |
+| OQ-001 | LLM và embedding provider/model, region, retention? | Chủ dự án, TASK-001 | Đã chốt Gemini Developer API: gemini-3.5-flash-lite + gemini-embedding-2, D=1536 (ADR-012); tier/region/retention thực tế cần xác minh trước live |
+| OQ-002 | Identity provider, login method, generation có auth? | Chủ dự án, TASK-001 | Đã chốt Auth0 Free + Google Login, OIDC/BFF, login trước Build/Save (ADR-007); tenant và token verification kiểm chứng TASK-016 |
+| OQ-003 | Ngân sách AI/infrastructure tối đa tháng? | Chủ dự án, TASK-015/TASK-025 | Development/test được phép dùng Gemini và chịu chi phí thực tế; không duyệt mức 10 USD/tháng. Live smoke opt-in và ghi usage/tariff. Runtime budget guard chốt TASK-015; budget deploy chốt TASK-025 |
 | OQ-004 | Backend hosting và production region? | Chủ dự án, TASK-025 | Một backend instance + managed Postgres nếu ngân sách cho phép |
 | OQ-005 | Có đủ evidence cho 100–150 tools trong 6 tuần? | Maintainer, TASK-005/TASK-023 | 15 records cho slice, 40–60 cho beta, 100–150 trước release |
-| OQ-006 | Ngôn ngữ UI và policy dữ liệu? | Chủ dự án, TASK-001/TASK-025 | UI tiếng Việt, technical terms English; retention đề xuất tại architecture |
+| OQ-006 | Ngôn ngữ UI và policy dữ liệu? | Chủ dự án, TASK-001/TASK-025 | Đã chốt UI English + tiếng Việt (ADR-012); nội dung catalog/user/AI giữ ngôn ngữ gốc. Policy/retention production còn mở ở TASK-025 |
 
 Nếu lịch không đủ, dời ngày release hoặc thống nhất sửa PRD; không âm thầm giảm chất lượng/độ phủ rồi gọi đó là MVP đã nghiệm thu.

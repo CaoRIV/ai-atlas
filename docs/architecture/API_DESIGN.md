@@ -4,6 +4,7 @@ Thiết kế `/api/v1`, chưa có API chạy thật. Nguồn entities: [Data mod
 
 ## 1. Quy ước chung
 
+- UI en/vi ánh xạ thông báo theo error code; locale chưa là input API, nội dung catalog/result giữ ngôn ngữ gốc (ADR-012).
 - JSON snake_case; UUID strings; timestamps RFC 3339 UTC; không tin ownership/verified flags do client gửi.
 - Object response: `{"data": {...}, "request_id": "UUID"}`. List response: `{"data": [], "pagination": {"page": 1, "page_size": 20, "total": 0}, "request_id": "UUID"}`. Generation dùng envelope riêng như AI spec. `DELETE` 204 không body.
 - Pagination `page >= 1`, `page_size=20` mặc định, tối đa 100; offset pagination đủ cho catalog nhỏ. Stable sort có UUID tie-break. Page vượt total trả data rỗng, không 404.

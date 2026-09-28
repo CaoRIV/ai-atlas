@@ -32,7 +32,7 @@ Success: người dùng hiểu tool và đến đúng official website. Mở tab
 
 ## 2. AI Stack Builder — FR-004 đến FR-007
 
-Entry: `/builder`, CTA từ trang chủ/Explorer. Theo ADR-007 đang đề xuất, cần đăng nhập trước request có chi phí AI. Nếu chưa đăng nhập, giữ bản nháp trong session UI và quay về sau login; không gửi prompt cho identity provider.
+Entry: `/builder`, CTA từ trang chủ/Explorer. Theo ADR-007 đã Accepted, cần đăng nhập trước request có chi phí AI. Nếu chưa đăng nhập, giữ bản nháp trong session UI và quay về sau login; không gửi prompt cho identity provider.
 
 ```mermaid
 flowchart TD

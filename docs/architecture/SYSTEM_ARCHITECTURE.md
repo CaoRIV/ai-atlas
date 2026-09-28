@@ -4,7 +4,7 @@ Ngày 28/09/2026 · Thiết kế MVP, chưa có deployment. Scope theo [PRD](../
 
 ## 1. Phương án và ranh giới
 
-Baseline được chấp nhận từ brief: Next.js, FastAPI, PostgreSQL/pgvector, API-based AI và một recommendation pipeline. Đề xuất triển khai: modular monolith backend, BFF session trên Next.js, OIDC, CLI import và một backend instance ban đầu. Provider, versions, hosting và ngân sách cần chốt theo TASK-001/TASK-025; không có quyết định vendor ngầm định.
+Baseline được chấp nhận từ brief: Next.js, FastAPI, PostgreSQL/pgvector, API-based AI và một recommendation pipeline. Đề xuất triển khai: modular monolith backend, BFF session trên Next.js, OIDC, CLI import và một backend instance ban đầu. TASK-001 chốt Auth0 Free + Google Login và Gemini Developer API (gemini-3.5-flash-lite; gemini-embedding-2, D=1536). Versions chốt TASK-002; hosting/budget deploy ở TASK-025. Budget test/tier/region/retention phải chốt trước live AI; fake mode có thể scaffold ngay.
 
 ```mermaid
 flowchart TB
@@ -68,13 +68,13 @@ sequenceDiagram
 
 Diagram mô tả happy path và clarification; timeout/provider failure trả lỗi theo [API](API_DESIGN.md). Không có vòng lặp agent tự gọi tools vô hạn. Tối đa một repair call trong deadline/budget còn lại.
 
-## 3. Authentication và authorization — đề xuất ADR-007
+## 3. Authentication và authorization — ADR-007 Accepted
 
 OIDC identity provider thực hiện login; Next.js dùng session cookie `HttpOnly`, `Secure` trên HTTPS và `SameSite=Lax`. Token để gọi backend lưu server-side trong session phù hợp adapter; không lưu access token ở localStorage. FastAPI xác minh signature qua JWKS có cache/rotation, issuer, audience, expiry; map `(issuer, subject)` tới UUID user nội bộ. Không tin owner_id hoặc role client gửi.
 
 Browser gọi BFF cùng origin cho thao tác authenticated; mutations kiểm tra CSRF token và Origin. BFF chuyển tiếp access token; API vẫn tự xác minh và lọc `owner_id=current_user.id` ở mọi truy vấn stack/run. Ngoài public catalog routes, không có anonymous mutation. CORS allowlist không thay thế authentication. Login callback chỉ cho phép return path nội bộ, tránh open redirect.
 
-MVP auth adapter cụ thể phải được chọn ở TASK-001, kiểm tra khả năng cấp token đúng audience. Backend không tự xây password storage hay password reset. API `/me` cung cấp thông tin user tối thiểu; đăng xuất kết thúc session tại BFF. Chính sách logout/revocation theo provider đã chọn cần test.
+MVP dùng Auth0 Free + Google Login đã chốt TASK-001; kiểm chứng tenant và token đúng audience trong TASK-016. Backend không tự xây password storage hay password reset. API `/me` cung cấp thông tin user tối thiểu; đăng xuất kết thúc session tại BFF. Chính sách logout/revocation theo provider đã chọn cần test.
 
 ## 4. Data flow và cập nhật catalog
 
@@ -87,7 +87,7 @@ Mỗi recommendation lưu catalog revision, prompt/pipeline version và embeddin
 - Error envelope chung có `code`, `message`, `details`, `request_id`; không lộ stack trace, SQL hoặc provider response thô.
 - Input invalid: 422; thiếu identity: 401; tài nguyên không thuộc user: 404; version conflict: 409; quota: 429; provider unavailable: 503; deadline: 504; invalid output sau repair: 502.
 - `partial/no_match/needs_clarification` là domain result 200, khác lỗi hệ thống.
-- Generation đề xuất giới hạn 5 requests/10 phút/user và 30/ngày/user; cấu hình được, chốt ở TASK-001. Quota reservation atomic trong DB, tính cả thất bại có gọi provider. Kiểm soát global inflight bằng một backend instance ban đầu; scale-out phải bổ sung cơ chế admission chung.
+- Generation đề xuất giới hạn 5 requests/10 phút/user và 30/ngày/user; cấu hình được; giữ làm default đề xuất, xác nhận trước bật live cùng budget. Quota reservation atomic trong DB, tính cả thất bại có gọi provider. Kiểm soát global inflight bằng một backend instance ban đầu; scale-out phải bổ sung cơ chế admission chung.
 - Token/output caps và deadline áp dụng trước external call. Chỉ bật live AI khi có provider tariff và monthly budget cấu hình. Reservation dựa trên upper bound, settlement theo actual usage; vượt budget từ chối trước gọi. Nếu không thể ước lượng an toàn, fail closed với lỗi cấu hình, không giả chi phí bằng 0.
 - Retry đọc catalog có backoff ở client; generation không tự retry khi browser không biết server đã gọi provider chưa. Provider retry/repair chia sẻ cùng deadline và call budget.
 

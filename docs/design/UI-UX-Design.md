@@ -21,9 +21,13 @@ Repository hiện có tài liệu, chưa có components, styles, assets hoặc m
 | UXD-003 | Builder là form có kết quả cấu trúc trên cùng trang | Người dùng nhìn rõ constraints và vai trò; chat UI khiến khó phân biệt dữ liệu đã xác minh; wizard extraction riêng chưa có API |
 | UXD-004 | Card grid cho Explorer, danh sách rows cho My Stacks | Discovery cần scan mô tả; workspace cần title, trạng thái và thời gian. Chưa thêm toggle grid/list chưa được chứng minh cần |
 | UXD-005 | Ordered workflow, không graph editor | Dễ đọc trên mobile, đúng MVP; edges không evidence phải hiện “Cần kiểm thử” |
-| UXD-006 | UI tiếng Việt, giữ AI Atlas và technical terms phổ biến | Nhất quán giả định OQ-006; nếu chốt ngôn ngữ khác, thay copy đồng bộ trước implementation |
+| UXD-006 | UI English và tiếng Việt, giữ AI Atlas và technical identifiers | Chủ dự án chốt tại TASK-001/ADR-012; controls, labels, loading/empty/error và accessibility copy có đủ hai locale |
 
 Linear, Vercel, Raycast và Hugging Face chỉ là tham chiếu về tính rõ ràng, mật độ và navigation trong brief; không coi đây là audit giao diện hiện hành của các sản phẩm đó, không sao chép branding/layout.
+
+### UI language theo ADR-012
+
+Dùng locale `en` và `vi`, mặc định `vi` khi chưa có preference. Selector `English / Tiếng Việt` trong app shell; lưu preference browser, không lưu secret. Đổi locale giữ route, filters, pagination và draft; cập nhật document lang và format ngày/số theo locale. Copy tiếng Việt bên dưới là bản tham chiếu, cần dictionary tiếng Anh tương ứng khi triển khai. Không dịch tool/model names, URLs, enum IDs, evidence hoặc nội dung do user/AI tạo. Error labels ánh xạ từ API error code; không phụ thuộc chuỗi message backend để đổi ngôn ngữ. Không thêm locale field vào API ở scope này. Kiểm tra cả hai locale ở 360px, keyboard và mọi trạng thái.
 
 ### 1.2. Điều chỉnh brief theo MVP hiện tại
 
@@ -381,4 +385,4 @@ Component tests cho states và keyboard; integration cho URL/form binding; E2E b
 
 Hiện hoàn thành **spec thiết kế**, chưa có pages/components/interactions chạy thật. Chưa có mock assets, code, visual regression screenshots hoặc browser accessibility audit. Contrast token có thể tính tĩnh; việc đó không chứng minh contrast của mọi trạng thái render, opacity hoặc overlay thực tế.
 
-Cần chốt ở implementation: identity provider/login UI theo ADR-007; font assets và dependency versions ở TASK-002; ngôn ngữ cuối cùng theo OQ-006. Logo assets, featured/related sections và compact Explorer view chỉ bổ sung khi có dữ liệu hoặc yêu cầu rõ; không là blocker của MVP hiện tại. Mọi thay đổi fields/API phải cập nhật contract trước, không lách bằng hardcoded UI data.
+Cần chốt ở implementation: Auth0 Google Login UI theo ADR-007; font assets và dependency versions ở TASK-002; UI en/vi đã chốt theo ADR-012, kiểm tra copy và locale persistence khi làm frontend. Logo assets, featured/related sections và compact Explorer view chỉ bổ sung khi có dữ liệu hoặc yêu cầu rõ; không là blocker của MVP hiện tại. Mọi thay đổi fields/API phải cập nhật contract trước, không lách bằng hardcoded UI data.

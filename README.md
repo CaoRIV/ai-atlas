@@ -57,6 +57,6 @@ Tuần 1 hoàn thành một lát cắt Explorer từ database đến UI; tuần 
 
 ## Bắt đầu và đóng góp
 
-Bắt đầu bằng TASK-001 trong [backlog](docs/planning/TASKS.md). Repository hiện chưa có lệnh chạy ứng dụng. Không chạy theo hướng dẫn cài đặt giả định. TASK-002 sẽ bổ sung cấu trúc code, version pinning, `.env.example`, lệnh setup/test và topology local đã kiểm tra trên Windows.
+TASK-001 đã hoàn tất review baseline: Auth0 Free + Google Login, Gemini Developer API và UI English/tiếng Việt; xem [quyết định và blockers live](docs/planning/BASELINE_REVIEW.md). Task tiếp theo là TASK-002 trong [backlog](docs/planning/TASKS.md), dùng fake mode vì budget/tier/region/retention live chưa chốt. Repository hiện chưa có lệnh chạy ứng dụng. Không chạy theo hướng dẫn cài đặt giả định. TASK-002 sẽ bổ sung cấu trúc code, version pinning, `.env.example`, lệnh setup/test và topology local đã kiểm tra trên Windows.
 
 Mỗi thay đổi nên giải quyết một task có acceptance criteria, kèm bằng chứng kiểm tra. Cập nhật tài liệu khi thay đổi contract; không đánh dấu Done nếu chưa kiểm chứng. Không commit API keys, token hoặc nội dung riêng tư của người dùng.

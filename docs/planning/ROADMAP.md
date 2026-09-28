@@ -10,7 +10,7 @@ Nếu chỉ có 4 tuần, mục tiêu khả thi là internal beta 40–60 tools 
 
 ## M0 — Chốt baseline và scaffold, đầu tuần 1
 
-- **Mục tiêu:** loại bỏ blockers provider/auth/budget và có môi trường chạy/test được.
+- **Mục tiêu:** chốt provider/auth, ghi blocker budget/live rõ ràng và có môi trường chạy/test fake mode được. TASK-001 hoàn tất review; ngân sách chưa có không chặn TASK-002 fake mode, nhưng chặn mọi live AI.
 - **Deliverables:** TASK-001, TASK-002; ADR decisions, versions đã pin, `.env.example`, local setup/CI skeleton.
 - **Dependencies:** bộ spec hiện tại; chủ dự án chốt các lựa chọn bắt buộc.
 - **Acceptance:** local web/API health và DB kết nối được; fake provider chạy không cần paid key; secret không lọt client; ghi commands thực tế.

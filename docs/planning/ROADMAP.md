@@ -1,6 +1,6 @@
 # Roadmap MVP — 6 tuần
 
-Đây là ước lượng cho một developer có khoảng 20–25 giờ/tuần, đang học Applied AI/AI Engineering. Dành khoảng 20% thời gian cho học, debugging và rework. Không có cam kết release theo ngày khi chưa đo tốc độ tuần đầu. Các task chưa triển khai; xem [Tasks](TASKS.md).
+Đây là ước lượng cho một developer có khoảng 20–25 giờ/tuần, đang học Applied AI/AI Engineering. Dành khoảng 20% thời gian cho học, debugging và rework. Không có cam kết release theo ngày khi chưa đo tốc độ tuần đầu. TASK-001/002 đã thiết lập baseline và foundation; trạng thái chi tiết nằm tại [Tasks](TASKS.md).
 
 ## Nguyên tắc sắp xếp
 

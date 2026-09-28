@@ -1,6 +1,6 @@
 # TASK-002 Foundation Scaffold Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Tạo một foundation có thể tái lập trên Windows và CI: Next.js web, FastAPI API, PostgreSQL/pgvector, Gemini adapter thật và các lệnh lint/type/test/build/health thực sự chạy được.
 
@@ -19,7 +19,7 @@
 - Health live không chạm DB; health ready kiểm tra DB và extension `vector`, không lộ credentials/version chi tiết.
 - Pin direct dependencies trong manifests và toàn bộ dependency graph bằng `pnpm-lock.yaml`/`uv.lock`.
 - UI shell ban đầu có locale `vi`/`en`, nhưng journey UI đầy đủ thuộc các task frontend sau.
-- Không implement catalog schema, auth flow, live Gemini adapter hoặc business endpoints trong TASK-002.
+- Không implement catalog schema, auth flow, recommendation orchestration hoặc business endpoints trong TASK-002; Gemini SDK adapter thật và opt-in live smoke thuộc scope foundation.
 - Không tự commit; AGENTS.md yêu cầu chỉ commit khi task yêu cầu. Người dùng đã xin commit name riêng cho TASK-001, chưa yêu cầu commit TASK-002.
 
 ## Review Focus
@@ -43,11 +43,11 @@
 **Interfaces:**
 - Produces: root commands `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`; Python groups resolved by `uv sync --all-groups`; documented environment names consumed by API/Compose.
 
-- [ ] Verify registry sources and pin Node 22 LTS, pnpm, Next/React/TypeScript/Tailwind/Vitest, Python 3.11, FastAPI/Pydantic/psycopg/pytest versions in manifests.
-- [ ] Add root workspace/config files and environment placeholders for database, OIDC, Gemini model keys, `EMBEDDING_DIM=1536`, `GEMINI_API_KEY`, and `RUN_LIVE_AI_TESTS=0`.
-- [ ] Implement `scripts/setup.ps1` to validate Node/Python/Docker, enable the pinned pnpm via Corepack, install lockfiles, and copy `.env.example` only when `.env` is absent.
-- [ ] Implement `scripts/check.ps1` to run the same lint/type/test/build sequence documented for CI.
-- [ ] Run setup from PowerShell; record actual versions and any host-specific limitation in README evidence.
+- [x] Verify registry sources and pin Node 22 LTS, pnpm, Next/React/TypeScript/Tailwind/Vitest, Python 3.11, FastAPI/Pydantic/psycopg/pytest versions in manifests.
+- [x] Add root workspace/config files and environment placeholders for database, OIDC, Gemini model keys, `EMBEDDING_DIM=1536`, `GEMINI_API_KEY`, and `RUN_LIVE_AI_TESTS=0`.
+- [x] Implement `scripts/setup.ps1` to validate Node/Python/Docker, enable the pinned pnpm via Corepack, install lockfiles, and copy `.env.example` only when `.env` is absent.
+- [x] Implement `scripts/check.ps1` to run the same lint/type/test/build sequence documented for CI.
+- [x] Run setup from PowerShell; record actual versions and any host-specific limitation in README evidence.
 
 ### Task 2: FastAPI health boundary and real Gemini adapter (TDD)
 
@@ -60,16 +60,16 @@
 **Interfaces:**
 - Produces: `create_app(settings: Settings | None = None) -> FastAPI`; `GET /health/live`; `GET /health/ready`; async `check_database_ready(database_url: str | None) -> ReadinessResult`; `GeminiProvider` wrapping `gemini-3.5-flash-lite` and `gemini-embedding-2` with injected Google Gen AI client/transport.
 
-- [ ] Write failing config tests proving health/settings load without API key, Gemini provider construction rejects a missing key, and secrets are excluded from public/debug serialization.
-- [ ] Run focused config tests and confirm expected failure because settings/app code is absent.
-- [ ] Implement strict settings with explicit Gemini model/dimension values and fail-closed provider construction; rerun focused tests to green.
-- [ ] Write failing health tests for live 200, ready 503 on missing/failed DB, and ready 200 only when DB plus `vector` extension are available.
-- [ ] Run health tests and confirm expected route/function failures.
-- [ ] Implement application factory, DB probe with bounded connection timeout, stable response models and 503 behavior; rerun health tests.
-- [ ] Write failing Gemini adapter contract tests using an injected transport/client fixture for structured JSON generation, 1536-dimensional embeddings, normalized usage/errors, model IDs, deadlines and no network access.
-- [ ] Implement the minimal Gemini adapter against `google-genai==2.23.0`; rerun focused tests plus full `uv run pytest` without `GEMINI_API_KEY`.
-- [ ] Add a separately marked live smoke test that is skipped unless `RUN_LIVE_AI_TESTS=1` and `GEMINI_API_KEY` exist; cap it to one tiny generation and one tiny embedding call and report sanitized model/usage.
-- [ ] Run Ruff lint/format check and mypy strict checks for API code.
+- [x] Write failing config tests proving health/settings load without API key, Gemini provider construction rejects a missing key, and secrets are excluded from public/debug serialization.
+- [x] Run focused config tests and confirm expected failure because settings/app code is absent.
+- [x] Implement strict settings with explicit Gemini model/dimension values and fail-closed provider construction; rerun focused tests to green.
+- [x] Write failing health tests for live 200, ready 503 on missing/failed DB, and ready 200 only when DB plus `vector` extension are available.
+- [x] Run health tests and confirm expected route/function failures.
+- [x] Implement application factory, DB probe with bounded connection timeout, stable response models and 503 behavior; rerun health tests.
+- [x] Write failing Gemini adapter contract tests using an injected transport/client fixture for structured JSON generation, configured-dimensional embeddings, normalized usage/errors, model IDs and no network access. Deadline enforcement remains in TASK-015.
+- [x] Implement the minimal Gemini adapter against `google-genai==2.23.0`; rerun focused tests plus full `uv run pytest` without `GEMINI_API_KEY`.
+- [x] Add a separately marked live smoke test that is skipped unless `RUN_LIVE_AI_TESTS=1` and `GEMINI_API_KEY` exist; cap it to one tiny generation and one tiny embedding call and report sanitized model/usage.
+- [x] Run Ruff lint/format check and mypy strict checks for API code.
 
 ### Task 3: Next.js web shell and health endpoint (TDD)
 
@@ -81,11 +81,11 @@
 **Interfaces:**
 - Produces: Next.js app build; `GET /api/health` returning `{status:"ok"}`; minimal bilingual foundation shell with semantic HTML and no backend/API secrets.
 
-- [ ] Write failing tests for web health JSON/status and accessible English/Vietnamese foundation copy.
-- [ ] Run `pnpm --filter @ai-atlas/web test` and confirm failure because routes/components are absent.
-- [ ] Implement minimal App Router shell, health route, Tailwind import and locale-ready copy boundary; rerun tests.
-- [ ] Run web ESLint, `tsc --noEmit`, unit tests and production build.
-- [ ] Inspect build output/env usage to confirm no server secrets use `NEXT_PUBLIC_*`.
+- [x] Write failing tests for web health JSON/status and accessible English/Vietnamese foundation copy.
+- [x] Run `pnpm --filter @ai-atlas/web test` and confirm failure because routes/components are absent.
+- [x] Implement minimal App Router shell, health route, Tailwind import and locale-ready copy boundary; rerun tests.
+- [x] Run web ESLint, `tsc --noEmit`, unit tests and production build.
+- [x] Inspect build output/env usage to confirm no server secrets use `NEXT_PUBLIC_*`.
 
 ### Task 4: PostgreSQL/pgvector Compose and clean-DB integration test
 
@@ -97,12 +97,12 @@
 **Interfaces:**
 - Produces: service `db` on configurable localhost port; healthcheck; named volume; `CREATE EXTENSION IF NOT EXISTS vector`; readiness integration test using the API's real DB probe.
 
-- [ ] Write the integration test requiring a real clean Postgres and asserting both connectivity and `vector` availability.
-- [ ] Run it without Compose and confirm the expected connection failure/skip gate is explicit.
-- [ ] Add Compose using pinned `pgvector/pgvector:0.8.6-pg17-bookworm`, low-memory Postgres settings, healthcheck, named volume and init SQL.
-- [ ] Start Compose with a clean project-scoped volume; wait for healthy; run the integration test to green.
-- [ ] Verify `docker compose config` and query `SELECT extversion FROM pg_extension WHERE extname='vector'` without logging credentials.
-- [ ] Stop services without deleting the named volume; document the separate recoverable reset command and its scope.
+- [x] Write the integration test requiring a real clean Postgres and asserting both connectivity and `vector` availability.
+- [x] Run it without Compose and confirm the expected connection failure/skip gate is explicit.
+- [x] Add Compose using pinned `pgvector/pgvector:0.8.6-pg17-bookworm`, low-memory Postgres settings, healthcheck, named volume and init SQL.
+- [x] Start Compose with a clean project-scoped volume; wait for healthy; run the integration test to green.
+- [x] Verify `docker compose config` and query `SELECT extversion FROM pg_extension WHERE extname='vector'` without logging credentials.
+- [x] Stop services without deleting the named volume; document the separate recoverable reset command and its scope.
 
 ### Task 5: CI, reproducible README và task closure
 
@@ -113,12 +113,13 @@
 **Interfaces:**
 - Produces: CI jobs for locked web checks/build and locked API lint/type/unit tests, plus DB integration against pinned pgvector; Windows quickstart and exact commands actually run.
 
-- [ ] Add CI with pinned action major versions, Node/Python/uv/pnpm setup, frozen lockfiles, cache, transport-isolated Gemini contract tests and DB integration; never inject paid keys or enable live markers.
-- [ ] Run the full local equivalent: frozen installs, Compose config/up, API lint/type/unit/integration, web lint/type/test/build, and HTTP smoke for web/API/DB readiness.
-- [ ] Update README with verified Windows commands, ports, expected health responses, troubleshooting for Docker/npm path, reset semantics and known limits.
-- [ ] Change ADR-009 to Accepted only if measured topology works; record actual environment and results.
-- [ ] Mark TASK-002 Done only when every acceptance item has fresh evidence; otherwise leave In progress/Blocked with the exact failing command.
-- [ ] Run `git diff --check`, secret-pattern scan, Markdown local-link check, and `git status --short`; inspect every changed file before handoff.
+- [x] Add CI with pinned action major versions, Node/Python/uv/pnpm setup, frozen lockfiles, cache, transport-isolated Gemini contract tests and DB integration; never inject paid keys or enable live markers.
+- [x] Run the full local equivalent: frozen installs, Compose config/up, API lint/type/unit/integration, web lint/type/test/build, and HTTP smoke for web/API/DB readiness.
+- [x] Update README with verified Windows commands, ports, expected health responses, troubleshooting for Docker/npm path, reset semantics and known limits.
+- [x] Change ADR-009 to Accepted only if measured topology works; record actual environment and results.
+- [x] Mark TASK-002 Done only when every acceptance item has fresh evidence; otherwise leave In progress/Blocked with the exact failing command.
+  - Completed on 28/09/2026: clean `scripts/setup.ps1`, DB integration/HTTP health và billed `uv run pytest -m live -s` pass. Reverified on 29/09/2026 after removing generated caches with stale ACL: `scripts/check.ps1` pass trực tiếp tại `D:\ai-atlas`. Sanitized live evidence: `gemini-3.5-flash-lite` dùng 9 input, 11 output và 20 total tokens; `gemini-embedding-2` trả D=1536. Không log prompt/key.
+- [x] Run `git diff --check`, secret-pattern scan, Markdown local-link check, and `git status --short`; inspect every changed file before handoff.
 
 ## Self-review
 

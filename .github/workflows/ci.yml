@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.6.0
+          run_install: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.28"
+          python-version: "3.11"
+          enable-cache: true
+      - run: uv sync --all-groups --frozen
+      - run: uv run ruff check apps/api
+      - run: uv run ruff format --check apps/api
+      - run: uv run mypy
+      - run: uv run pytest -m "not integration and not live"
+
+  database:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.28"
+          python-version: "3.11"
+          enable-cache: true
+      - run: uv sync --all-groups --frozen
+      - run: docker compose up --detach --wait db
+      - run: uv run pytest -m integration
+        env:
+          DATABASE_URL: postgresql://ai_atlas:ai_atlas_dev@127.0.0.1:5432/ai_atlas
+      - if: always()
+        run: docker compose down --volumes

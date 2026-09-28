@@ -76,9 +76,9 @@ Ngày lập: 28/09/2026. `Accepted` nghĩa baseline kiến trúc đã được y
 
 ## ADR-009 — Modular monolith, local host processes
 
-- **Status:** Proposed; chốt TASK-002 sau kiểm tra môi trường.
+- **Status:** Accepted, 28/09/2026; được kiểm tra trong TASK-002 trên Windows với host processes và database Compose.
 - **Context:** Solo developer và RAM khoảng 8GB không phù hợp hạ tầng phân tán nặng.
-- **Decision đề xuất:** Một backend instance chia modules; Next.js/backend chạy trên host local, DB container; synchronous generation 30s; DB-backed quota/budget reservation.
+- **Decision:** Một backend instance chia modules; Next.js/backend chạy trên host local, DB container; synchronous generation 30s; DB-backed quota/budget reservation. Foundation pin Node.js 22 + pnpm, Python 3.11 + uv và PostgreSQL 17/pgvector 0.8.6.
 - **Rationale:** Ít service, dễ debug, không Redis/queue/Kubernetes.
 - **Alternatives:** All-in-Docker mặc định, serverless mọi bước, async worker/microservices.
 - **Consequences:** Không job resume dài hạn, throughput ban đầu hạn chế. Scale-out cần admission/concurrency strategy và benchmark mới. Hosting chưa được quyết định.
@@ -110,6 +110,6 @@ Ngày lập: 28/09/2026. `Accepted` nghĩa baseline kiến trúc đã được y
 
 ## Các lựa chọn còn mở sau TASK-001 review
 
-Review TASK-001 ngày 28/09/2026: [quyết định và checklist cấu hình](BASELINE_REVIEW.md). Auth0/curation đã chốt ở ADR-007/008; provider/model/UI ở ADR-011/012. Chủ dự án cho phép development/test phát sinh chi phí Gemini thật; production budget/tier/region/retention vẫn phải chốt trước staging. ADR-009/010 vẫn theo TASK-002/003.
+Review TASK-001 ngày 28/09/2026: [quyết định và checklist cấu hình](BASELINE_REVIEW.md). Auth0/curation đã chốt ở ADR-007/008; provider/model/UI ở ADR-011/012. Chủ dự án cho phép development/test phát sinh chi phí Gemini thật; production budget/tier/region/retention vẫn phải chốt trước staging. ADR-009 đã chốt trong TASK-002; ADR-010 vẫn thuộc TASK-003.
 
-Còn mở: exact dependency versions, tenant Auth0/region thực tế, Gemini tier/region/retention, ngân sách test trước live, hosting/budget/retention production. Lịch sử ADR-011 chỉ chốt provider; ADR-012 bổ sung model/dimension đã duyệt. Theo dõi OQ-001 đến OQ-006 tại [PRD](../product/PRD.md). Chốt lựa chọn bằng evidence phù hợp ở thời điểm triển khai; bộ spec hiện không yêu cầu mua dịch vụ hoặc cài dependencies.
+Còn mở: tenant Auth0/region thực tế, Gemini tier/region/retention, hosting/budget/retention production. Exact dependency versions của foundation đã pin trong lockfiles; nâng cấp phải chạy lại lint/type/unit/build/integration. Lịch sử ADR-011 chỉ chốt provider; ADR-012 bổ sung model/dimension đã duyệt. Theo dõi OQ-001 đến OQ-006 tại [PRD](../product/PRD.md).

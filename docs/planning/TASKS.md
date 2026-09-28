@@ -1,6 +1,6 @@
 # Implementation backlog
 
-Ngày 28/09/2026. **TASK-001 hoàn tất review baseline ngày 28/09/2026; TASK-002 trở đi chưa bắt đầu. Runtime chỉ dùng Gemini adapter thật; unit/CI inject transport và không gọi API trả phí; development live smoke được chủ dự án cho phép dùng chi phí Gemini thật.** Tài liệu đã được soạn không có nghĩa implementation Done.
+Ngày 28/09/2026. **TASK-001 và TASK-002 đã Done; TASK-003 là task tiếp theo và chưa bắt đầu. Runtime chỉ dùng Gemini adapter thật; unit/CI inject SDK client và không gọi API trả phí. Billed live smoke của foundation đã pass có chủ đích, không mở live AI public.** Tài liệu đã được soạn không có nghĩa implementation Done.
 
 Trạng thái: `Todo`, `In progress`, `Blocked`, `Done`, `Deferred`. Khi làm đổi trạng thái ngay tại dòng task; khi Done bổ sung ngày, thay đổi và bằng chứng checks. Priority: P0 cần cho core journey hoặc integrity; P1 cần trước MVP release; P2 sau MVP. Dependency là task ID, dấu `—` là không có. Không bắt đầu task phụ thuộc quyết định Proposed khi quyết định chưa chốt.
 
@@ -9,7 +9,7 @@ Trạng thái: `Todo`, `In progress`, `Blocked`, `Done`, `Deferred`. Khi làm đ
 | ID | Priority / status | Mô tả và deliverable | Dependencies | Acceptance criteria | Docs / requirements |
 |---|---|---|---|---|---|
 | TASK-001 | P0 / Done | 28/09/2026 — Chốt Auth0 Free + Google Login; Gemini Developer API/model/D=1536; curated CLI; UI en/vi; ghi blockers budget/live. [Baseline và checklist](BASELINE_REVIEW.md); evidence kiểm tra tài liệu bên dưới | — | OQ-001/002/003 có quyết định hoặc nêu blocker cụ thể; ghi tariff/source/date khi chọn live provider; ADR-007/008 có trạng thái đúng; không bật live AI khi chưa có budget | [PRD](../product/PRD.md) OQ-001..006; [ADR](DECISIONS.md) |
-| TASK-002 | P0 / Todo | Scaffold `apps/web`, `apps/api`, DB Compose, env example, Gemini adapter thật, transport-isolated CI lint/type/unit skeleton và setup Windows | TASK-001 | Versions pin, web/API/DB health chạy được từ clean setup; adapter contract tests không gọi network; opt-in live smoke dùng Gemini key thật và ghi usage/model; README có commands đã chạy; xác nhận ADR-009 | [Architecture](../architecture/SYSTEM_ARCHITECTURE.md); NFR-005/008 |
+| TASK-002 | P0 / Done | 28/09/2026 — Scaffold `apps/web`, `apps/api`, DB Compose, env example, Gemini adapter thật, transport-isolated CI và setup Windows; clean setup/offline/DB/HTTP/live smoke đã pass, ADR-009 Accepted | TASK-001 | Versions pin, web/API/DB health chạy được từ clean setup; adapter contract tests không gọi network; opt-in live smoke dùng Gemini key thật và ghi usage/model; README có commands đã chạy; xác nhận ADR-009 | [Architecture](../architecture/SYSTEM_ARCHITECTURE.md); NFR-005/008 |
 | TASK-003 | P0 / Todo | Implement schema/migrations cho catalog, evidence, users, runs, stacks; chốt ADR-010 | TASK-002 | Migration DB sạch pass; FK/composite FK/unique/check/rollback tests; snapshot/TTL schema nhất quán; embedding D đúng model config | [Data model](../architecture/DATA_MODEL.md); FR-001/008, NFR-008 |
 | TASK-004 | P0 / Todo | Catalog API categories/list/detail, keyword/filter/pagination và OpenAPI | TASK-003 | Contract tests gồm multiple categories, unknown/stale filters, page rỗng, 404 archived; kết quả không duplicate; query parameter allowlist | [API](../architecture/API_DESIGN.md); FR-002/003 |
 | TASK-005 | P0 / Todo | Curated format + import dry-run/upsert; seed 15 tools có nguồn chính thức, 8 categories và capability vocabulary | TASK-003 | Import lặp không nhân bản; lỗi source/FK/type rollback; 15 records publish có evidence/date, unknown minh bạch; synthetic fixtures tách khỏi curated data | [Data model](../architecture/DATA_MODEL.md); FR-001/011 |
@@ -56,6 +56,8 @@ TASK-023 có thể tiến hành theo batches cùng các mốc khác sau TASK-005
 
 Evidence TASK-001, 28/09/2026: PowerShell/Python tại `D:\ai-atlas` kiểm tra 89 Markdown links nội bộ đều tồn tại; assert trạng thái ADR-007/008/011/012 Accepted và ADR-009/010 Proposed, TASK-001 Done/TASK-002 Todo và cấu trúc bảng backlog đều pass; `git diff --check` không lỗi. Review đối chiếu PRD, contracts, flows và design cho UI en/vi, Auth0/Gemini. Không chạy runtime tests/live eval vì chưa có ứng dụng; không xác nhận tenant/model access hoặc chi phí thực tế. Quyết định bổ sung sau TASK-001: bỏ fake provider, unit/CI inject transport, development live smoke được phép dùng chi phí Gemini thật; production budget vẫn thuộc TASK-015/025.
 
+Evidence TASK-002 Done, 28/09/2026; xác nhận lại 29/09/2026: `scripts/setup.ps1` pass từ clean Windows copy (Node 22.16.0, pnpm 12.6.0, Python 3.11.9, uv 0.9.28). Sau khi dọn generated caches có ACL cũ, `scripts/check.ps1` pass trực tiếp tại `D:\ai-atlas` với Python 3.11.14: web ESLint/typegen+strict typecheck/2 Vitest tests/Next production build pass; API Ruff/format/mypy/16 unit tests pass. Compose image `pgvector/pgvector:0.8.6-pg17-bookworm` healthy trên cổng fallback 55432 vì PostgreSQL host dùng 5432; extension `vector` 0.8.6 và 2 integration tests pass. HTTP smoke trả web/liveness/readiness 200, readiness xác nhận database/vector `ok`. Billed `uv run pytest -m live -s` pass 1 test với `gemini-3.5-flash-lite` (9 input, 11 output, 20 total tokens) và `gemini-embedding-2` (D=1536); output không chứa prompt hoặc key. Không claim AI quality, production budget hoặc public live readiness.
+
 | ID | Priority / status | Deliverable dự kiến | Dependencies | Acceptance trước khi lên lịch | Reference |
 |---|---|---|---|---|---|
 | FUT-001 | P2 / Deferred | AI Comparison theo facts có nguồn | TASK-026 | PRD bổ sung comparison criteria/UX và freshness semantics, không dùng điểm tổng hợp vô căn cứ | [PRD](../product/PRD.md) ngoài MVP |
@@ -65,6 +67,6 @@ Không đưa payments, social, training hoặc multi-agent vào backlog đang th
 
 ## Cách bắt đầu một phiên làm việc
 
-Đọc [AGENTS](../../AGENTS.md), TASK-001 đã hoàn tất review; task tiếp theo là TASK-002 với Gemini adapter thật. Unit/CI inject transport; live smoke là opt-in có chi phí thật. Các quyết định nằm tại Baseline review. Dùng output là ADR cập nhật và checklist cấu hình, không tự triển khai ứng dụng trong task review baseline. Sau đó mới TASK-002.
+Đọc [AGENTS](../../AGENTS.md). TASK-002 đã Done; task đủ dependency để bắt đầu tiếp theo là TASK-003 về schema/migrations catalog, evidence, users, runs và stacks, đồng thời chốt ADR-010. Unit/CI tiếp tục dùng injected SDK client, không gọi Gemini; live smoke luôn opt-in và không phải bằng chứng AI quality hay production readiness.
 
 Mẫu ghi evidence khi cập nhật task: `Ngày — thay đổi — lệnh/kiểm tra — kết quả — môi trường/fixture — hạn chế`. Không điền trước kết quả chưa chạy; task blocked phải ghi dependency hoặc thông tin cần, không đánh dấu Done để đi tiếp.

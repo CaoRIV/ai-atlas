@@ -28,12 +28,12 @@ TASK-001 hoàn tất phần review. Sau xác nhận bổ sung, runtime không d�
 
 ## Checklist cấu hình cho TASK-002
 
-- Pin dependency versions và kiểm tra Windows/DB trong TASK-002; ADR-009 vẫn Proposed cho tới kiểm tra môi trường. ADR-010 chốt tại TASK-003.
+- [x] Pin dependency versions và kiểm tra Windows/DB; ADR-009 Accepted ngày 28/09/2026 sau khi host web/API và database Compose chạy được. ADR-010 vẫn chốt tại TASK-003.
 - DATABASE_URL; OIDC_ISSUER/AUDIENCE/CLIENT_ID/CLIENT_SECRET; SESSION_SECRET: env placeholders, không credentials trong docs/client.
 - LLM_PROVIDER và EMBEDDING_PROVIDER: Google Gemini; LLM_MODEL=gemini-3.5-flash-lite; EMBEDDING_MODEL=gemini-embedding-2; EMBEDDING_DIM=1536. Runtime chỉ có Gemini adapter; unit/CI inject transport để cô lập network.
 - GEMINI_API_KEY theo env server, không prefix public. AI_MONTHLY_BUDGET_USD chưa đặt; không suy ra unlimited hoặc free. Live smoke cần cờ opt-in và ghi model/usage/tariff thực tế.
 - Giữ caps AI spec và tối đa một repair/30s; tính đủ thinking tokens trong billable output. Quota 5 requests/10 phút và 30/ngày/user vẫn là default đề xuất cần chốt trước live.
-- Health web/API/DB, CI/offline checks và commands tái hiện thuộc TASK-002, chưa chạy trong review này.
+- [x] TASK-002 bổ sung web/API/DB health, CI/offline checks và commands tái hiện; evidence nằm trong [Tasks](TASKS.md) và [README](../../README.md). Billed live smoke opt-in pass ngày 28/09/2026 với `gemini-3.5-flash-lite` (20 total tokens) và `gemini-embedding-2` (D=1536), không log prompt/key; không suy ra AI quality hoặc production readiness.
 
 ## Blockers được chuyển sang giai đoạn phù hợp
 

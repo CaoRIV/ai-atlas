@@ -1,0 +1,7 @@
+packages:
+  - apps/web
+
+storeDir: .cache/pnpm-store
+
+allowBuilds:
+  unrs-resolver: true

@@ -1,0 +1,40 @@
+name: ai-atlas
+
+services:
+  db:
+    image: pgvector/pgvector:0.8.6-pg17-bookworm
+    command:
+      - postgres
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - max_connections=30
+      - -c
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=64MB
+    mem_limit: 512m
+    shm_size: 128mb
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ai_atlas}
+      POSTGRES_USER: ${POSTGRES_USER:-ai_atlas}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ai_atlas_dev}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ai_atlas_postgres_data:/var/lib/postgresql/data
+      - ./infra/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB} && psql -U $${POSTGRES_USER} -d $${POSTGRES_DB} -tAc \"SELECT 1 FROM pg_extension WHERE extname='vector'\" | grep -q 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  ai_atlas_postgres_data:

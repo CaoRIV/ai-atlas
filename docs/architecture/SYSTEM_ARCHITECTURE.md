@@ -4,7 +4,7 @@ Ngày 28/09/2026 · Thiết kế MVP, chưa có deployment. Scope theo [PRD](../
 
 ## 1. Phương án và ranh giới
 
-Baseline được chấp nhận từ brief: Next.js, FastAPI, PostgreSQL/pgvector, API-based AI và một recommendation pipeline. Đề xuất triển khai: modular monolith backend, BFF session trên Next.js, OIDC, CLI import và một backend instance ban đầu. TASK-001 chốt Auth0 Free + Google Login và Gemini Developer API (gemini-3.5-flash-lite; gemini-embedding-2, D=1536). Versions chốt TASK-002; hosting/budget deploy ở TASK-025. Runtime chỉ có Gemini adapter thật; unit/CI cô lập network bằng injected transport, còn live smoke cần API key và opt-in rõ ràng.
+Baseline được chấp nhận từ brief: Next.js, FastAPI, PostgreSQL/pgvector, API-based AI và một recommendation pipeline. Đề xuất triển khai: modular monolith backend, BFF session trên Next.js, OIDC, CLI import và một backend instance ban đầu. TASK-001 chốt Auth0 Free + Google Login và Gemini Developer API (gemini-3.5-flash-lite; gemini-embedding-2, D=1536). Versions được pin trong TASK-002; hosting/budget deploy ở TASK-025. Runtime chỉ có Gemini adapter thật; unit/CI cô lập network bằng injected transport, còn live smoke cần API key và opt-in rõ ràng.
 
 ```mermaid
 flowchart TB
@@ -101,9 +101,9 @@ Dashboard đầu tiên chỉ cần số liệu aggregate: latency/error theo rou
 
 ## 7. Local development
 
-Cấu trúc dự kiến: `apps/web`, `apps/api`, `data/curated`, `evals`, `infra`. Trên Windows khoảng 8GB RAM: chạy frontend/backend bằng host processes, chỉ Postgres+pgvector trong Docker Compose; không containerize mọi service mặc định. Full Compose profile có thể thêm sau khi đã đo RAM. Giới hạn DB memory; tránh embedding model local và không chạy model training.
+TASK-002 đã scaffold `apps/web`, `apps/api`, `infra/db/init`, scripts PowerShell, Compose và CI. Trên Windows khoảng 8GB RAM: frontend/backend chạy bằng host processes; chỉ PostgreSQL+pgvector chạy trong Docker Compose. Không containerize mọi service mặc định. `data/curated` và `evals` chỉ tạo ở các task sở hữu dữ liệu/evaluation tương ứng. Full Compose profile chỉ xem xét sau khi đo RAM.
 
-TASK-002 phải pin versions tương thích, ghi shell commands thực tế và bổ sung `.env.example` không chứa secret. Biến dự kiến: `DATABASE_URL`, `OIDC_ISSUER`, `OIDC_AUDIENCE`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `SESSION_SECRET`, `LLM_PROVIDER`, `LLM_MODEL`, `LLM_API_KEY`, `EMBEDDING_PROVIDER`, `EMBEDDING_MODEL`, `EMBEDDING_DIM`, `AI_MONTHLY_BUDGET_USD`. Các biến secret không có prefix public của frontend.
+Toolchain pin Node.js 22, pnpm 12.6.0, Python 3.11 và lockfiles cho hai hệ sinh thái; bảng phiên bản và lệnh đã kiểm tra nằm trong [README](../../README.md). `.env.example` định nghĩa `DATABASE_URL`, OIDC fields, `SESSION_SECRET`, model/embedding identifiers, `GEMINI_API_KEY`, request timeout/output cap, `RUN_LIVE_AI_TESTS` và `AI_MONTHLY_BUDGET_USD`. Các biến secret không có prefix public của frontend.
 
 Unit/CI dùng Gemini adapter với injected transport và synthetic response fixtures, không gọi provider hoặc cần API key. Không có fake provider runtime. Live smoke/eval là bước riêng được bật có chủ đích, ghi model/usage/tariff và phát sinh chi phí Gemini thật.
 

@@ -1,0 +1,51 @@
+[project]
+name = "ai-atlas-api"
+version = "0.1.0"
+description = "AI Atlas FastAPI backend"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+  "fastapi==0.141.1",
+  "google-genai==2.23.0",
+  "httpx==0.28.1",
+  "psycopg[binary]==3.3.6",
+  "pydantic==2.13.5",
+  "pydantic-settings==2.15.0",
+  "uvicorn[standard]==0.53.0",
+]
+
+[dependency-groups]
+dev = [
+  "mypy==1.18.2",
+  "pytest==9.1.1",
+  "pytest-asyncio==1.4.0",
+  "ruff==0.16.8",
+]
+
+[tool.uv]
+package = false
+required-version = "==0.9.28"
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+pythonpath = ["apps/api/src"]
+testpaths = ["apps/api/tests"]
+asyncio_mode = "auto"
+markers = [
+  "integration: requires local PostgreSQL/pgvector",
+  "live: calls the paid Gemini Developer API",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["apps/api/src", "apps/api/tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+mypy_path = "apps/api/src"
+packages = ["ai_atlas_api"]
+

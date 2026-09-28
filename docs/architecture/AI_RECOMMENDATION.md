@@ -169,7 +169,7 @@ Nếu output vi phạm schema/ID/evidence: tối đa một repair chỉ với l�
 
 ## 6. Failure handling, bảo mật và adapter
 
-Provider interface dự kiến: `extract_requirements(input, schema)`, `embed(texts, model_key)`, `generate_stack(context, schema)`. Adapter trả normalized usage/errors/model identifier; validation độc lập provider. Fake adapter dùng trong CI. Prompt version được lưu cùng run; đổi prompt/retrieval/model phải chạy eval trước merge/release.
+Provider interface dự kiến: `extract_requirements(input, schema)`, `embed(texts, model_key)`, `generate_stack(context, schema)`. Gemini adapter trả normalized usage/errors/model identifier; validation độc lập provider. Unit/CI inject HTTP/SDK transport và response fixtures vào cùng adapter, không có fake provider implementation và không gọi network. Prompt version được lưu cùng run; đổi prompt/retrieval/model phải chạy eval trước merge/release.
 
 Timeout tổng 30s kể cả repair; từng call nhận remaining deadline. Embedding failure → keyword fallback, ghi warning `semantic_retrieval_unavailable`; LLM failure → 503, không trả recommendation giả. Provider rate limit phải map đúng retry semantics, không retry vô hạn. Catalog thay đổi revision trong khi request chạy → revalidate; nếu không thể giữ evidence consistent thì trả 409 `CATALOG_CHANGED` và yêu cầu thử lại.
 
@@ -179,7 +179,7 @@ User prompt và descriptions/source excerpts là dữ liệu, không phải syst
 
 Giới hạn thiết kế: objective ≤ 4000 ký tự; retrieval context ≤ 6000 tokens; extraction output ≤ 1500 tokens; generation/repair output ≤ 3000 tokens/call; tối đa 1 extraction + 1 generation + 1 repair, một query embedding batch. Adapter phải kiểm tra context/token ceiling theo model thực tế khi chọn provider; không giả định mọi model hỗ trợ cùng limits hoặc structured output.
 
-Đo tổng token và cost của cả extraction, embedding, generation, repair. Pricing config gồm provider/model, đơn giá theo đơn vị billing, currency USD, ngày kiểm tra và version; không dùng giá tool catalog làm giá LLM backend. Trước call reserve upper bound bằng tariff đã kiểm tra; hết budget không gọi. `estimated_cost_usd=null` khi không có giá/usage đáng tin trong fake/offline run; live calls không được bật nếu không có budget config. Giá thực tế trên hóa đơn vẫn là nguồn đối soát cuối cùng.
+Đo tổng token và cost của cả extraction, embedding, generation, repair. Pricing config gồm provider/model, đơn giá theo đơn vị billing, currency USD, ngày kiểm tra và version; không dùng giá tool catalog làm giá LLM backend. Trước public runtime call, TASK-015 reserve upper bound bằng tariff đã kiểm tra; hết budget không gọi. `estimated_cost_usd=null` trong transport-isolated tests không có provider usage; live smoke ghi usage/tariff thực tế và hóa đơn vẫn là nguồn đối soát cuối cùng.
 
 ## 8. Evaluation dataset ban đầu
 

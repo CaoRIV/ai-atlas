@@ -4,7 +4,7 @@ Ngày 28/09/2026 · Thiết kế MVP, chưa có deployment. Scope theo [PRD](../
 
 ## 1. Phương án và ranh giới
 
-Baseline được chấp nhận từ brief: Next.js, FastAPI, PostgreSQL/pgvector, API-based AI và một recommendation pipeline. Đề xuất triển khai: modular monolith backend, BFF session trên Next.js, OIDC, CLI import và một backend instance ban đầu. TASK-001 chốt Auth0 Free + Google Login và Gemini Developer API (gemini-3.5-flash-lite; gemini-embedding-2, D=1536). Versions chốt TASK-002; hosting/budget deploy ở TASK-025. Budget test/tier/region/retention phải chốt trước live AI; fake mode có thể scaffold ngay.
+Baseline được chấp nhận từ brief: Next.js, FastAPI, PostgreSQL/pgvector, API-based AI và một recommendation pipeline. Đề xuất triển khai: modular monolith backend, BFF session trên Next.js, OIDC, CLI import và một backend instance ban đầu. TASK-001 chốt Auth0 Free + Google Login và Gemini Developer API (gemini-3.5-flash-lite; gemini-embedding-2, D=1536). Versions chốt TASK-002; hosting/budget deploy ở TASK-025. Runtime chỉ có Gemini adapter thật; unit/CI cô lập network bằng injected transport, còn live smoke cần API key và opt-in rõ ràng.
 
 ```mermaid
 flowchart TB
@@ -105,7 +105,7 @@ Cấu trúc dự kiến: `apps/web`, `apps/api`, `data/curated`, `evals`, `infra
 
 TASK-002 phải pin versions tương thích, ghi shell commands thực tế và bổ sung `.env.example` không chứa secret. Biến dự kiến: `DATABASE_URL`, `OIDC_ISSUER`, `OIDC_AUDIENCE`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `SESSION_SECRET`, `LLM_PROVIDER`, `LLM_MODEL`, `LLM_API_KEY`, `EMBEDDING_PROVIDER`, `EMBEDDING_MODEL`, `EMBEDDING_DIM`, `AI_MONTHLY_BUDGET_USD`. Các biến secret không có prefix public của frontend.
 
-Offline tests dùng fake provider và synthetic fixtures; không cần tài khoản trả phí để chạy CI. Live eval là bước riêng được bật có chủ đích với budget.
+Unit/CI dùng Gemini adapter với injected transport và synthetic response fixtures, không gọi provider hoặc cần API key. Không có fake provider runtime. Live smoke/eval là bước riêng được bật có chủ đích, ghi model/usage/tariff và phát sinh chi phí Gemini thật.
 
 ## 8. Deployment và trade-offs
 

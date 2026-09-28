@@ -55,7 +55,7 @@ Các ngưỡng là **release targets ban đầu**, phải ghi environment/datase
 | ID | Yêu cầu | Cách kiểm chứng |
 |---|---|---|
 | NFR-001 | API đọc catalog p95 ≤ 800ms phía server | 100 requests, concurrency 5, catalog 150 tools, môi trường staging đã ghi cấu hình; không tính cold start, báo cold start riêng |
-| NFR-002 | Generation có timeout tổng 30s; p95 ≤ 20s là mục tiêu | Đo ≥ 30 live runs trên provider/model đã chọn; timeout trả lỗi, không treo UI; local fake-provider không chứng minh live latency |
+| NFR-002 | Generation có timeout tổng 30s; p95 ≤ 20s là mục tiêu | Đo ≥ 30 live runs trên provider/model đã chọn; timeout trả lỗi, không treo UI; transport-isolated unit/E2E không chứng minh live latency |
 | NFR-003 | Hard-constraint và identity validation fail closed | 100% kết quả được phát ra vượt validator; adversarial suite chặn unknown/ID ngoài catalog/owner sai; báo cả abstention rate để tránh đạt bằng cách từ chối mọi request |
 | NFR-004 | Bảo vệ dữ liệu và secrets | Không secret trong client/repo/log; kiểm tra cross-user, token sai/hết hạn, SQL injection, prompt injection và rate limits |
 | NFR-005 | Local phù hợp máy khoảng 8GB RAM | Chạy host frontend/backend, chỉ DB trong container; không local LLM; ghi peak memory và trải nghiệm 3 journeys trên máy mục tiêu trước release |
@@ -78,13 +78,13 @@ AI Comparison nâng cao và interactive workflow editor được hoãn. Schema v
 
 ## 8. Assumptions và câu hỏi mở
 
-Review TASK-001 ngày 28/09/2026: [Baseline review](../planning/BASELINE_REVIEW.md) ghi đề xuất và blocker cụ thể cho OQ-001/002/003, checklist cấu hình và phần UI language của OQ-006. TASK-001 đã chốt các lựa chọn bên dưới; budget/tier/region/retention còn mở được ghi rõ và chặn live AI, không chặn scaffold fake mode.
+Review TASK-001 ngày 28/09/2026: [Baseline review](../planning/BASELINE_REVIEW.md) ghi quyết định và checklist cấu hình. Chủ dự án sau đó bỏ fake provider và cho phép development/test dùng chi phí Gemini thật; unit/CI vẫn không gọi external API. Production budget/tier/region/retention còn mở trước staging/deploy.
 
 | ID | Giả định/điểm cần quyết định | Chủ trì, hạn chốt | Phương án tạm dùng |
 |---|---|---|---|
 | OQ-001 | LLM và embedding provider/model, region, retention? | Chủ dự án, TASK-001 | Đã chốt Gemini Developer API: gemini-3.5-flash-lite + gemini-embedding-2, D=1536 (ADR-012); tier/region/retention thực tế cần xác minh trước live |
 | OQ-002 | Identity provider, login method, generation có auth? | Chủ dự án, TASK-001 | Đã chốt Auth0 Free + Google Login, OIDC/BFF, login trước Build/Save (ADR-007); tenant và token verification kiểm chứng TASK-016 |
-| OQ-003 | Ngân sách AI/infrastructure tối đa tháng? | Chủ dự án, trước live test / TASK-025 | Chưa ước lượng ngân sách khi đang test; không duyệt mức 10 USD/tháng. Fake mode mặc định; live kể cả test/reindex bị khóa đến khi có hạn mức, tier, tariff và guards. Budget deploy chốt trước TASK-025 |
+| OQ-003 | Ngân sách AI/infrastructure tối đa tháng? | Chủ dự án, TASK-015/TASK-025 | Development/test được phép dùng Gemini và chịu chi phí thực tế; không duyệt mức 10 USD/tháng. Live smoke opt-in và ghi usage/tariff. Runtime budget guard chốt TASK-015; budget deploy chốt TASK-025 |
 | OQ-004 | Backend hosting và production region? | Chủ dự án, TASK-025 | Một backend instance + managed Postgres nếu ngân sách cho phép |
 | OQ-005 | Có đủ evidence cho 100–150 tools trong 6 tuần? | Maintainer, TASK-005/TASK-023 | 15 records cho slice, 40–60 cho beta, 100–150 trước release |
 | OQ-006 | Ngôn ngữ UI và policy dữ liệu? | Chủ dự án, TASK-001/TASK-025 | Đã chốt UI English + tiếng Việt (ADR-012); nội dung catalog/user/AI giữ ngôn ngữ gốc. Policy/retention production còn mở ở TASK-025 |

@@ -9,7 +9,7 @@ Ngày: 28/09/2026. Phạm vi: review tài liệu và quyết định cấu hình
 | Auth | Auth0 Free + Google Login; OIDC/BFF; Explorer public, Build/Save cần login | ADR-007 Accepted. “Auth Free” được hiểu là Auth0 Free theo phương án đang thảo luận; chưa tạo tenant |
 | LLM | gemini-3.5-flash-lite qua Gemini Developer API | ADR-011/012 Accepted; model access thực tế chưa test |
 | Embedding | gemini-embedding-2, output_dimensionality=1536 | ADR-012; migration pin vector(1536), query/document cùng model space |
-| Budget | Chưa ước lượng vì đang test; ngân sách deploy chốt sau | Không phê duyệt đề xuất 10 USD/tháng. Fake mode; live AI bị khóa khi chưa có budget/tier/tariff/guards |
+| Budget | Chưa ước lượng monthly budget; chủ dự án cho phép development/test chịu chi phí Gemini thực tế; ngân sách deploy chốt sau | Không phê duyệt đề xuất 10 USD/tháng. Live smoke phải opt-in và ghi model/usage/tariff; runtime guard thuộc TASK-015 |
 | Curation | Curated files + CLI, verify nguồn thủ công, dry-run/atomic import | ADR-008 Accepted; triển khai TASK-005 |
 | UI | English và tiếng Việt | ADR-012; UI controls/states có en/vi; nội dung catalog/user/AI giữ nguyên ngôn ngữ gốc |
 
@@ -22,16 +22,16 @@ Quy ước UI ban đầu: mặc định vi, selector English / Tiếng Việt, l
 | OQ-001/002/003 có quyết định hoặc blocker cụ thể | Provider/model/D/API offering/auth đã chốt; budget/tier/region/retention chưa có được ghi bên dưới |
 | Tariff/source/date khi chọn live provider | Bảng tariff và nguồn chính thức phía dưới, kiểm tra 28/09/2026; chưa phải cấu hình runtime hoặc quyền chi tiêu |
 | ADR-007/008 có trạng thái đúng | Accepted theo xác nhận chủ dự án; ADR-011 giữ lịch sử provider, ADR-012 bổ sung model/UI/test |
-| Không bật live AI khi chưa budget | Không có code hoặc live calls; architecture/AI spec giữ fail-closed; TASK-002 chỉ scaffold fake mode |
+| Kiểm soát live AI | Runtime public vẫn cần auth/quota/budget ở TASK-015/016; TASK-002 được phép chạy live smoke có chủ đích với chi phí Gemini thật, không bật endpoint public |
 
-TASK-001 hoàn tất phần review theo tiêu chí cho phép ghi blocker. Điều này không nghiệm thu M0 runtime hoặc live readiness. TASK-002 có thể bắt đầu khi được giao; các bước live phải chờ giải quyết blockers tương ứng.
+TASK-001 hoàn tất phần review. Sau xác nhận bổ sung, runtime không dùng fake provider; TASK-002 triển khai Gemini adapter thật và được phép chạy live smoke opt-in. Điều này không nghiệm thu M0 runtime, quality hay public live readiness.
 
 ## Checklist cấu hình cho TASK-002
 
 - Pin dependency versions và kiểm tra Windows/DB trong TASK-002; ADR-009 vẫn Proposed cho tới kiểm tra môi trường. ADR-010 chốt tại TASK-003.
 - DATABASE_URL; OIDC_ISSUER/AUDIENCE/CLIENT_ID/CLIENT_SECRET; SESSION_SECRET: env placeholders, không credentials trong docs/client.
-- LLM_PROVIDER và EMBEDDING_PROVIDER: Google Gemini; LLM_MODEL=gemini-3.5-flash-lite; EMBEDDING_MODEL=gemini-embedding-2; EMBEDDING_DIM=1536. Tên adapter key cụ thể pin khi scaffold; fake adapter không gọi network AI.
-- AI_MONTHLY_BUDGET_USD chưa đặt; không suy ra unlimited hoặc free. Secrets LLM_API_KEY theo env server, không prefix public.
+- LLM_PROVIDER và EMBEDDING_PROVIDER: Google Gemini; LLM_MODEL=gemini-3.5-flash-lite; EMBEDDING_MODEL=gemini-embedding-2; EMBEDDING_DIM=1536. Runtime chỉ có Gemini adapter; unit/CI inject transport để cô lập network.
+- GEMINI_API_KEY theo env server, không prefix public. AI_MONTHLY_BUDGET_USD chưa đặt; không suy ra unlimited hoặc free. Live smoke cần cờ opt-in và ghi model/usage/tariff thực tế.
 - Giữ caps AI spec và tối đa một repair/30s; tính đủ thinking tokens trong billable output. Quota 5 requests/10 phút và 30/ngày/user vẫn là default đề xuất cần chốt trước live.
 - Health web/API/DB, CI/offline checks và commands tái hiện thuộc TASK-002, chưa chạy trong review này.
 
@@ -39,12 +39,12 @@ TASK-001 hoàn tất phần review theo tiêu chí cho phép ghi blocker. Điề
 
 | Blocker | Chủ trì / hạn gỡ | Tác động |
 |---|---|---|
-| Budget live test, quota, Gemini free/paid tier | Chủ dự án trước lần gọi Gemini thật đầu tiên, kể cả embedding/reindex | Không bật live; dùng fake fixtures cho phát triển/CI. “Chỉ test” không tự miễn yêu cầu budget |
+| Gemini tier/tariff và usage | Implementer kiểm tra trước live smoke; quota/runtime budget guard tại TASK-015 | Development/test được chủ dự án cho phép chịu chi phí thật; CI dùng injected transport/fixtures và không gọi external API |
 | Quyền truy cập model, region/retention của Google project | Chủ dự án + implementer trước live; privacy production TASK-025 | Không coi chọn model là bằng chứng khả dụng tài khoản hoặc data residency |
 | Auth0 tenant/region, Google OAuth credentials, audience/JWKS/logout | TASK-016 trước authenticated live flow | Có thể scaffold placeholders; chưa tuyên bố login hoạt động |
 | Hosting, budget production, backup/retention/privacy notice | Chủ dự án tại TASK-025, trước staging/deploy | Không triển khai cloud ngoài scope |
 
-Ngân sách là hạn mức chi tiêu được phép, không cần bằng dự đoán hóa đơn chính xác. Có thể quyết định hạn mức test riêng khi cần; chưa bắt chủ dự án ước lượng production để scaffold.
+Không có monthly estimate không được hiểu là API miễn phí. Live smoke phải nhỏ, opt-in và báo usage/model; generation public vẫn chờ admission/budget guard theo roadmap.
 
 ## Evidence kiểm tra
 
@@ -60,9 +60,9 @@ Ngân sách là hạn mức chi tiêu được phép, không cần bằng dự �
 | LLM extraction/generation/repair | Đã chốt `gemini-3.5-flash-lite` qua Gemini Developer API | Có Structured Outputs và thinking [S5]; adapter phải tính cả thinking tokens trong cost và giới hạn output. Chưa claim quality/latency đạt eval |
 | Embedding | Đã chốt `gemini-embedding-2`, `EMBEDDING_DIM=1536` | Đặt `output_dimensionality=1536` rõ ràng vì default là 3072 [S6]. Chỉ dùng text cho catalog MVP; version cả document/query formatting và đo Recall@5 |
 | Local database | PostgreSQL + pgvector qua Docker Compose | Giữ baseline dự án; chưa thuê cloud DB. Host chạy web/API để giới hạn tài nguyên; RAM thực tế đo ở task sau |
-| Ngân sách giai đoạn local | Chưa ước lượng ngân sách theo chủ dự án; fake mode mặc định; không tự điền 10 USD/tháng hoặc ngân sách 0 như đã duyệt | Hạn mức test phải chốt trước live, budget deploy trước TASK-025; không suy ra free tier cho Gemini từ Auth0 Free |
+| Ngân sách giai đoạn local | Chưa ước lượng monthly budget; chủ dự án chấp nhận chi phí Gemini thật cho development/test | Không tự điền 10 USD/tháng hoặc budget 0; live smoke nhỏ và opt-in, budget deploy trước TASK-025 |
 
-Dùng chung Google Gemini cho LLM và embedding theo quyết định chủ dự án. Gemini Developer API đã được chủ dự án chốt; Vertex AI không thuộc baseline hiện tại. Fake mode vẫn mặc định; không tự chuyển sang model khác khi lỗi vì thay model có thể thay cost/quality. Auth0 đã duyệt; mức ngân sách 10 USD/tháng trước đó không áp dụng.
+Dùng chung Google Gemini cho LLM và embedding theo quyết định chủ dự án. Gemini Developer API đã được chủ dự án chốt; Vertex AI không thuộc baseline hiện tại. Runtime không có fake provider; unit/CI inject transport vào cùng Gemini adapter. Không tự chuyển model khi lỗi vì có thể thay cost/quality. Auth0 đã duyệt; mức ngân sách 10 USD/tháng trước đó không áp dụng.
 
 ### Tariff đề xuất để cấu hình sau phê duyệt
 

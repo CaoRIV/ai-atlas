@@ -23,7 +23,8 @@ CORE_TABLES = (
 )
 FACT_TABLES = ("tool_facts", "evidence", "tool_capabilities", "tool_embeddings")
 IDENTITY_RUN_TABLES = ("users", "generation_runs")
-MIGRATED_TABLES = CORE_TABLES + FACT_TABLES + IDENTITY_RUN_TABLES
+STACK_TABLES = ("stacks", "stack_items", "stack_edges")
+MIGRATED_TABLES = CORE_TABLES + FACT_TABLES + IDENTITY_RUN_TABLES + STACK_TABLES
 FRESH_VERIFIED_TRUE_QUERY = """
     SELECT EXISTS (
         SELECT 1
@@ -78,11 +79,12 @@ def test_schema_migrations_apply_roll_back_and_reapply_cleanly(
 ) -> None:
     applied = upgrade(migration_database_url)
 
-    assert [migration.version for migration in applied] == [1, 2, 3]
+    assert [migration.version for migration in applied] == [1, 2, 3, 4]
     assert [(status.version, status.applied) for status in get_status(migration_database_url)] == [
         (1, True),
         (2, True),
         (3, True),
+        (4, True),
     ]
 
     with psycopg.connect(migration_database_url) as connection:
@@ -105,7 +107,7 @@ def test_schema_migrations_apply_roll_back_and_reapply_cleanly(
 
     rolled_back = downgrade(migration_database_url, target_version=0)
 
-    assert [migration.version for migration in rolled_back] == [3, 2, 1]
+    assert [migration.version for migration in rolled_back] == [4, 3, 2, 1]
     with psycopg.connect(migration_database_url) as connection:
         remaining = connection.execute(
             """
@@ -119,7 +121,7 @@ def test_schema_migrations_apply_roll_back_and_reapply_cleanly(
 
     assert remaining == []
     assert history_count == (0,)
-    assert [migration.version for migration in upgrade(migration_database_url)] == [1, 2, 3]
+    assert [migration.version for migration in upgrade(migration_database_url)] == [1, 2, 3, 4]
 
 
 @pytest.mark.integration
@@ -853,3 +855,447 @@ def test_generation_run_ownership_ttl_cleanup_and_user_redaction(
             (other_run_id,),
         ).fetchone()
         assert other_row == (other_user_id, True)
+
+
+@pytest.mark.integration
+def test_stack_idempotency_snapshots_ownership_and_versioning(
+    migration_database_url: str,
+) -> None:
+    upgrade(migration_database_url)
+    owner_id = uuid4()
+    other_owner_id = uuid4()
+    generation_id = uuid4()
+    stack_id = uuid4()
+    other_stack_id = uuid4()
+    idempotency_key = uuid4()
+
+    with psycopg.connect(migration_database_url, autocommit=True) as connection:
+        connection.execute(
+            """
+            INSERT INTO users (id, auth_issuer, auth_subject)
+            VALUES (%s, %s, %s), (%s, %s, %s)
+            """,
+            (
+                owner_id,
+                "https://issuer.example/",
+                "stack-owner",
+                other_owner_id,
+                "https://issuer.example/",
+                "other-stack-owner",
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO generation_runs (
+                id, owner_id, result, status, pipeline_version, catalog_revision,
+                reserved_cost_usd, request_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                generation_id,
+                owner_id,
+                Jsonb({"status": "complete"}),
+                "complete",
+                "pipeline-v1",
+                "catalog-v1",
+                "0.000000",
+                uuid4(),
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO stacks (
+                id, owner_id, title, purpose, source_generation_id,
+                generation_snapshot, validation_state, idempotency_key,
+                creation_request_hash
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                stack_id,
+                owner_id,
+                "Generated stack",
+                "Synthetic generated stack fixture.",
+                generation_id,
+                Jsonb({"pipeline_version": "pipeline-v1", "result": {"status": "complete"}}),
+                "generated",
+                idempotency_key,
+                "canonical-request-hash",
+            ),
+        )
+
+        stored = connection.execute(
+            """
+            SELECT version, generation_snapshot, source_generation_id
+            FROM stacks
+            WHERE id = %s AND owner_id = %s
+            """,
+            (stack_id, owner_id),
+        ).fetchone()
+        assert stored == (
+            1,
+            {"pipeline_version": "pipeline-v1", "result": {"status": "complete"}},
+            generation_id,
+        )
+        assert (
+            connection.execute(
+                "SELECT id FROM stacks WHERE id = %s AND owner_id = %s",
+                (stack_id, other_owner_id),
+            ).fetchone()
+            is None
+        )
+
+        not_owned = connection.execute(
+            """
+            UPDATE stacks
+            SET title = %s, version = version + 1, updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s AND owner_id = %s AND version = %s
+            RETURNING version
+            """,
+            ("Not allowed", stack_id, other_owner_id, 1),
+        ).fetchone()
+        assert not_owned is None
+        updated = connection.execute(
+            """
+            UPDATE stacks
+            SET title = %s, version = version + 1, updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s AND owner_id = %s AND version = %s
+            RETURNING version
+            """,
+            ("Updated stack", stack_id, owner_id, 1),
+        ).fetchone()
+        assert updated == (2,)
+        stale = connection.execute(
+            """
+            UPDATE stacks
+            SET title = %s, version = version + 1, updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s AND owner_id = %s AND version = %s
+            RETURNING version
+            """,
+            ("Stale update", stack_id, owner_id, 1),
+        ).fetchone()
+        assert stale is None
+
+        with pytest.raises(psycopg.errors.UniqueViolation):
+            connection.execute(
+                """
+                INSERT INTO stacks (
+                    id, owner_id, title, purpose, validation_state,
+                    idempotency_key, creation_request_hash
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    uuid4(),
+                    owner_id,
+                    "Duplicate retry",
+                    "Same owner and idempotency key.",
+                    "manual",
+                    idempotency_key,
+                    "canonical-request-hash",
+                ),
+            )
+
+        connection.execute(
+            """
+            INSERT INTO stacks (
+                id, owner_id, title, purpose, validation_state,
+                idempotency_key, creation_request_hash
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                other_stack_id,
+                other_owner_id,
+                "Independent retry scope",
+                "The same key is valid for another owner.",
+                "manual",
+                idempotency_key,
+                "other-canonical-request-hash",
+            ),
+        )
+
+        invalid_stacks = (
+            ("   ", "Valid purpose", None, "manual", 1, None, None),
+            ("Valid title", "   ", None, "manual", 1, None, None),
+            ("Valid title", "Valid purpose", Jsonb([]), "manual", 1, None, None),
+            ("Valid title", "Valid purpose", None, "stale", 1, None, None),
+            ("Valid title", "Valid purpose", None, "manual", 0, None, None),
+            ("Valid title", "Valid purpose", None, "manual", 1, uuid4(), None),
+            ("Valid title", "Valid purpose", None, "manual", 1, None, "orphan-hash"),
+            ("Valid title", "Valid purpose", None, "manual", 1, uuid4(), "   "),
+        )
+        for title, purpose, snapshot, state, version, key, request_hash in invalid_stacks:
+            with pytest.raises(psycopg.errors.CheckViolation):
+                connection.execute(
+                    """
+                    INSERT INTO stacks (
+                        id, owner_id, title, purpose, generation_snapshot,
+                        validation_state, version, idempotency_key, creation_request_hash
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        uuid4(),
+                        owner_id,
+                        title,
+                        purpose,
+                        snapshot,
+                        state,
+                        version,
+                        key,
+                        request_hash,
+                    ),
+                )
+
+        connection.execute("DELETE FROM generation_runs WHERE id = %s", (generation_id,))
+        retained_snapshot = connection.execute(
+            """
+            SELECT source_generation_id, generation_snapshot
+            FROM stacks
+            WHERE id = %s
+            """,
+            (stack_id,),
+        ).fetchone()
+        assert retained_snapshot == (
+            None,
+            {"pipeline_version": "pipeline-v1", "result": {"status": "complete"}},
+        )
+
+        connection.execute("DELETE FROM users WHERE id = %s", (owner_id,))
+        assert connection.execute(
+            "SELECT count(*) FROM stacks WHERE id = %s", (stack_id,)
+        ).fetchone() == (0,)
+        assert connection.execute(
+            "SELECT owner_id FROM stacks WHERE id = %s", (other_stack_id,)
+        ).fetchone() == (other_owner_id,)
+
+
+@pytest.mark.integration
+def test_stack_item_and_edge_graph_integrity(migration_database_url: str) -> None:
+    upgrade(migration_database_url)
+    owner_id = uuid4()
+    first_stack_id = uuid4()
+    second_stack_id = uuid4()
+    first_tool_id = uuid4()
+    second_tool_id = uuid4()
+    third_tool_id = uuid4()
+    first_item_id = uuid4()
+    second_item_id = uuid4()
+    other_stack_item_id = uuid4()
+    edge_id = uuid4()
+
+    with psycopg.connect(migration_database_url, autocommit=True) as connection:
+        connection.execute(
+            "INSERT INTO users (id, auth_issuer, auth_subject) VALUES (%s, %s, %s)",
+            (owner_id, "https://issuer.example/", "graph-owner"),
+        )
+        for tool_id, slug in (
+            (first_tool_id, "graph-tool-one"),
+            (second_tool_id, "graph-tool-two"),
+            (third_tool_id, "graph-tool-three"),
+        ):
+            connection.execute(
+                """
+                INSERT INTO tools (
+                    id, slug, name, description, official_url, publication_status
+                ) VALUES (%s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    tool_id,
+                    slug,
+                    slug,
+                    "Synthetic graph fixture.",
+                    f"https://example.com/{slug}",
+                    "published",
+                ),
+            )
+        connection.execute(
+            """
+            INSERT INTO stacks (id, owner_id, title, purpose, validation_state)
+            VALUES (%s, %s, %s, %s, %s), (%s, %s, %s, %s, %s)
+            """,
+            (
+                first_stack_id,
+                owner_id,
+                "First graph",
+                "Tests graph constraints.",
+                "manual",
+                second_stack_id,
+                owner_id,
+                "Second graph",
+                "Tests cross-stack isolation.",
+                "manual",
+            ),
+        )
+        for item_id, stack_id, tool_id, role, position in (
+            (first_item_id, first_stack_id, first_tool_id, "extract", 1),
+            (second_item_id, first_stack_id, second_tool_id, "generate", 2),
+            (other_stack_item_id, second_stack_id, third_tool_id, "store", 1),
+        ):
+            connection.execute(
+                """
+                INSERT INTO stack_items (
+                    id, stack_id, tool_id, role, position, rationale,
+                    evidence_ids, tool_snapshot
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    item_id,
+                    stack_id,
+                    tool_id,
+                    role,
+                    position,
+                    "Server-derived rationale.",
+                    [],
+                    Jsonb({"slug": role, "revision": 1}),
+                ),
+            )
+        connection.execute(
+            """
+            INSERT INTO stack_edges (
+                id, stack_id, from_item_id, to_item_id, description,
+                compatibility_status, evidence_ids
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                edge_id,
+                first_stack_id,
+                first_item_id,
+                second_item_id,
+                "Extracted content flows to generation.",
+                "unverified",
+                [],
+            ),
+        )
+
+        with pytest.raises(psycopg.errors.UniqueViolation):
+            connection.execute(
+                """
+                INSERT INTO stack_items (
+                    id, stack_id, tool_id, role, position, tool_snapshot
+                ) VALUES (%s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    uuid4(),
+                    first_stack_id,
+                    third_tool_id,
+                    "duplicate-position",
+                    2,
+                    Jsonb({"slug": "duplicate"}),
+                ),
+            )
+
+        for position in (0, 21):
+            with pytest.raises(psycopg.errors.CheckViolation):
+                connection.execute(
+                    """
+                    INSERT INTO stack_items (
+                        id, stack_id, tool_id, role, position, tool_snapshot
+                    ) VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        uuid4(),
+                        first_stack_id,
+                        third_tool_id,
+                        "invalid-position",
+                        position,
+                        Jsonb({"slug": "invalid-position"}),
+                    ),
+                )
+
+        for role, snapshot in (("   ", Jsonb({"slug": "empty-role"})), ("valid", Jsonb([]))):
+            with pytest.raises(psycopg.errors.CheckViolation):
+                connection.execute(
+                    """
+                    INSERT INTO stack_items (
+                        id, stack_id, tool_id, role, position, tool_snapshot
+                    ) VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    (uuid4(), second_stack_id, third_tool_id, role, 2, snapshot),
+                )
+
+        with pytest.raises(psycopg.errors.ForeignKeyViolation):
+            connection.execute(
+                """
+                INSERT INTO stack_edges (
+                    id, stack_id, from_item_id, to_item_id, description,
+                    compatibility_status
+                ) VALUES (%s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    uuid4(),
+                    first_stack_id,
+                    first_item_id,
+                    other_stack_item_id,
+                    "Cross-stack edge.",
+                    "unverified",
+                ),
+            )
+
+        with pytest.raises(psycopg.errors.CheckViolation):
+            connection.execute(
+                """
+                INSERT INTO stack_edges (
+                    id, stack_id, from_item_id, to_item_id, description,
+                    compatibility_status
+                ) VALUES (%s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    uuid4(),
+                    first_stack_id,
+                    first_item_id,
+                    first_item_id,
+                    "Self loop.",
+                    "unverified",
+                ),
+            )
+
+        with pytest.raises(psycopg.errors.UniqueViolation):
+            connection.execute(
+                """
+                INSERT INTO stack_edges (
+                    id, stack_id, from_item_id, to_item_id, description,
+                    compatibility_status
+                ) VALUES (%s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    uuid4(),
+                    first_stack_id,
+                    first_item_id,
+                    second_item_id,
+                    "Duplicate edge.",
+                    "unverified",
+                ),
+            )
+
+        for description, status in (("Valid", "unknown"), ("x" * 1001, "unverified")):
+            with pytest.raises(psycopg.errors.CheckViolation):
+                connection.execute(
+                    """
+                    INSERT INTO stack_edges (
+                        id, stack_id, from_item_id, to_item_id, description,
+                        compatibility_status
+                    ) VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        uuid4(),
+                        first_stack_id,
+                        second_item_id,
+                        first_item_id,
+                        description,
+                        status,
+                    ),
+                )
+
+        connection.execute("DELETE FROM stack_items WHERE id = %s", (second_item_id,))
+        assert connection.execute(
+            "SELECT count(*) FROM stack_edges WHERE id = %s", (edge_id,)
+        ).fetchone() == (0,)
+
+        with pytest.raises(psycopg.errors.ForeignKeyViolation):
+            connection.execute("DELETE FROM tools WHERE id = %s", (first_tool_id,))
+
+        connection.execute("DELETE FROM stacks WHERE id = %s", (first_stack_id,))
+        assert connection.execute(
+            "SELECT count(*) FROM stack_items WHERE stack_id = %s", (first_stack_id,)
+        ).fetchone() == (0,)
+        assert connection.execute(
+            "SELECT stack_id FROM stack_items WHERE id = %s", (other_stack_item_id,)
+        ).fetchone() == (second_stack_id,)

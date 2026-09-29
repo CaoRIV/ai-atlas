@@ -4,7 +4,7 @@
 
 AI Atlas là nền tảng khám phá AI tools và xây dựng AI stack theo mục tiêu, thiết bị và ngân sách của người dùng. Sản phẩm kết nối một thư viện được biên tập với hệ thống đề xuất có căn cứ, giúp trả lời: có công cụ nào, công cụ nào phù hợp và chúng kết hợp thành quy trình như thế nào?
 
-**Trạng thái ngày 28/09/2026:** foundation scaffold đã chạy được: Next.js shell song ngữ, FastAPI health/readiness, PostgreSQL + pgvector bằng Compose, Gemini adapter thật và CI không gọi dịch vụ trả phí. Chưa có catalog schema/migrations, dữ liệu công cụ đã xác minh, authentication flow, recommendation feature hoặc benchmark. Các chỉ tiêu sản phẩm trong tài liệu vẫn là mục tiêu nghiệm thu.
+**Trạng thái ngày 29/09/2026:** foundation scaffold đã chạy được: Next.js shell song ngữ, FastAPI health/readiness, PostgreSQL + pgvector bằng Compose, Gemini adapter thật và CI không gọi dịch vụ trả phí. TASK-003 đang In progress; subtask 003.1 đã bổ sung migration runner và catalog core gồm providers, models, categories, capabilities, tools cùng các bảng nối. Facts/evidence/embeddings, users/runs/stacks, dữ liệu công cụ đã xác minh, authentication flow, recommendation feature và benchmark chưa được triển khai. Các chỉ tiêu sản phẩm trong tài liệu vẫn là mục tiêu nghiệm thu.
 
 ## Vấn đề và người dùng
 
@@ -89,6 +89,20 @@ docker compose up --detach --wait db
 
 Nếu Docker API chưa sẵn sàng, mở Docker Desktop và đợi engine khởi động rồi chạy lại. Không cần npm global: `scripts/pnpm.ps1` tải đúng pnpm 12.6.0 qua Corepack và tránh phụ thuộc npm trên máy.
 
+Áp dụng versioned SQL migrations trước khi chạy API. Đặt `DATABASE_URL` theo cổng PostgreSQL thực tế:
+
+```powershell
+$env:DATABASE_URL = "postgresql://ai_atlas:ai_atlas_dev@127.0.0.1:5432/ai_atlas"
+uv run python apps/api/src/ai_atlas_api/migrations.py up
+uv run python apps/api/src/ai_atlas_api/migrations.py status
+```
+
+Rollback yêu cầu target tường minh. Lệnh sau xóa toàn bộ schema do migrations quản lý nên chỉ dùng trên database test riêng:
+
+```powershell
+uv run python apps/api/src/ai_atlas_api/migrations.py down --to 0
+```
+
 Chạy API và web trong hai terminal:
 
 ```powershell
@@ -110,7 +124,7 @@ Chạy lint, strict typecheck, unit tests và production build không gọi Gemi
 .\scripts\check.ps1
 ```
 
-Với database Compose đang healthy, chạy integration test:
+Với database Compose đang healthy, chạy integration tests. Migration tests tự tạo và xóa database tạm, không sửa schema trong database được cấu hình bởi `DATABASE_URL`:
 
 ```powershell
 $env:DATABASE_URL = "postgresql://ai_atlas:ai_atlas_dev@127.0.0.1:5432/ai_atlas"
@@ -133,4 +147,4 @@ docker compose down --volumes
 
 Không có runtime fake provider. Unit/CI inject SDK client response tại boundary của adapter; workflow CI không đặt `GEMINI_API_KEY` và loại marker `live`. Gemini key, OIDC secrets và session secret chỉ tồn tại ở server environment, không dùng biến `NEXT_PUBLIC_*`.
 
-TASK-002 đã Done ngày 28/09/2026 sau khi clean setup/offline/DB/HTTP checks và billed live smoke đều pass. Smoke xác nhận `gemini-3.5-flash-lite` trả structured output với 20 total tokens và `gemini-embedding-2` trả vector D=1536; kết quả này chỉ chứng minh adapter access/contract, không chứng minh AI quality hoặc production readiness. Không dán key vào chat hoặc commit. Task phát triển tiếp theo là TASK-003 về schema/migrations catalog, evidence, users, runs và stacks; trạng thái và evidence đầy đủ nằm trong [backlog](docs/planning/TASKS.md).
+TASK-002 đã Done ngày 28/09/2026 sau khi clean setup/offline/DB/HTTP checks và billed live smoke đều pass. TASK-003 đang In progress; subtask 003.1 hoàn tất ngày 29/09/2026 với migration CLI có checksum, transaction, advisory lock, up/down và catalog core đã kiểm tra trên PostgreSQL 17/pgvector. Các subtask facts/evidence/embeddings, users/runs/stacks và indexes/full verification vẫn còn; ADR-010 tiếp tục Proposed. Không dán key vào chat hoặc commit. Trạng thái và evidence đầy đủ nằm trong [backlog](docs/planning/TASKS.md).

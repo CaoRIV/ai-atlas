@@ -1,0 +1,7 @@
+DROP TABLE IF EXISTS tool_models;
+DROP TABLE IF EXISTS tool_categories;
+DROP TABLE IF EXISTS tools;
+DROP TABLE IF EXISTS capabilities;
+DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS models;
+DROP TABLE IF EXISTS providers;

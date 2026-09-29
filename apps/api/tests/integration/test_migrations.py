@@ -79,12 +79,13 @@ def test_schema_migrations_apply_roll_back_and_reapply_cleanly(
 ) -> None:
     applied = upgrade(migration_database_url)
 
-    assert [migration.version for migration in applied] == [1, 2, 3, 4]
+    assert [migration.version for migration in applied] == [1, 2, 3, 4, 5]
     assert [(status.version, status.applied) for status in get_status(migration_database_url)] == [
         (1, True),
         (2, True),
         (3, True),
         (4, True),
+        (5, True),
     ]
 
     with psycopg.connect(migration_database_url) as connection:
@@ -107,7 +108,7 @@ def test_schema_migrations_apply_roll_back_and_reapply_cleanly(
 
     rolled_back = downgrade(migration_database_url, target_version=0)
 
-    assert [migration.version for migration in rolled_back] == [4, 3, 2, 1]
+    assert [migration.version for migration in rolled_back] == [5, 4, 3, 2, 1]
     with psycopg.connect(migration_database_url) as connection:
         remaining = connection.execute(
             """
@@ -121,7 +122,159 @@ def test_schema_migrations_apply_roll_back_and_reapply_cleanly(
 
     assert remaining == []
     assert history_count == (0,)
-    assert [migration.version for migration in upgrade(migration_database_url)] == [1, 2, 3, 4]
+    assert [migration.version for migration in upgrade(migration_database_url)] == [1, 2, 3, 4, 5]
+
+
+@pytest.mark.integration
+def test_schema_indexes_cover_foreign_keys_and_contract_queries(
+    migration_database_url: str,
+) -> None:
+    upgrade(migration_database_url)
+
+    with psycopg.connect(migration_database_url) as connection:
+        missing_fk_indexes = connection.execute(
+            """
+            SELECT c.conrelid::regclass::text, c.conname
+            FROM pg_constraint AS c
+            WHERE c.contype = 'f'
+              AND c.connamespace = 'public'::regnamespace
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM pg_index AS i
+                  WHERE i.indrelid = c.conrelid
+                    AND i.indisvalid
+                    AND i.indisready
+                    AND i.indnkeyatts >= cardinality(c.conkey)
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM generate_subscripts(c.conkey, 1) AS s
+                        WHERE (i.indkey::smallint[])[s - 1] <> c.conkey[s]
+                    )
+              )
+            ORDER BY 1, 2
+            """
+        ).fetchall()
+        unvalidated_constraints = connection.execute(
+            """
+            SELECT conrelid::regclass::text, conname
+            FROM pg_constraint
+            WHERE connamespace = 'public'::regnamespace
+              AND NOT convalidated
+            ORDER BY 1, 2
+            """
+        ).fetchall()
+        index_specs = {
+            (str(row[0]), str(row[1]), tuple(str(column) for column in row[2]))
+            for row in connection.execute(
+                """
+                SELECT tbl.relname, am.amname,
+                       ARRAY(
+                           SELECT att.attname
+                           FROM unnest(idx.indkey::smallint[]) WITH ORDINALITY
+                                AS key(attnum, ord)
+                           JOIN pg_attribute AS att
+                             ON att.attrelid = tbl.oid
+                            AND att.attnum = key.attnum
+                           WHERE key.ord <= idx.indnkeyatts
+                           ORDER BY key.ord
+                       ) AS key_columns
+                FROM pg_index AS idx
+                JOIN pg_class AS tbl ON tbl.oid = idx.indrelid
+                JOIN pg_class AS index_rel ON index_rel.oid = idx.indexrelid
+                JOIN pg_am AS am ON am.oid = index_rel.relam
+                JOIN pg_namespace AS ns ON ns.oid = tbl.relnamespace
+                WHERE ns.nspname = 'public'
+                  AND idx.indisvalid
+                  AND idx.indisready
+                """
+            ).fetchall()
+        }
+
+    required_query_indexes = {
+        ("tools", "btree", ("publication_status", "slug")),
+        ("tools", "gin", ("search_vector",)),
+        ("tool_facts", "btree", ("key", "verification_status", "tool_id")),
+        ("evidence", "btree", ("fact_id", "fact_revision", "expires_at")),
+        ("generation_runs", "btree", ("owner_id", "created_at")),
+        ("generation_runs", "btree", ("created_at", "status")),
+        ("stacks", "btree", ("owner_id", "updated_at", "id")),
+    }
+    assert missing_fk_indexes == []
+    assert unvalidated_constraints == []
+    assert required_query_indexes <= index_specs
+
+
+@pytest.mark.integration
+def test_catalog_search_vector_supports_weighted_simple_queries(
+    migration_database_url: str,
+) -> None:
+    upgrade(migration_database_url)
+    published_tool_id = uuid4()
+    archived_tool_id = uuid4()
+    unrelated_tool_id = uuid4()
+
+    with psycopg.connect(migration_database_url, autocommit=True) as connection:
+        for tool_id, slug, status in (
+            (published_tool_id, "workflow-pilot", "published"),
+            (archived_tool_id, "archived-workflow-pilot", "archived"),
+        ):
+            connection.execute(
+                """
+                INSERT INTO tools (
+                    id, slug, name, description, official_url, publication_status,
+                    search_vector
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s,
+                    setweight(to_tsvector('simple', %s), 'A')
+                    || setweight(to_tsvector('simple', %s), 'B')
+                    || setweight(to_tsvector('simple', %s), 'C')
+                )
+                """,
+                (
+                    tool_id,
+                    slug,
+                    "Workflow Pilot",
+                    "Synthetic catalog search fixture.",
+                    f"https://example.com/{slug}",
+                    status,
+                    "Workflow Pilot",
+                    "Synthetic catalog search fixture.",
+                    "Productivity Automation workflow_automation",
+                ),
+            )
+        connection.execute(
+            """
+            INSERT INTO tools (
+                id, slug, name, description, official_url, publication_status
+            ) VALUES (%s, %s, %s, %s, %s, %s)
+            """,
+            (
+                unrelated_tool_id,
+                "unrelated-tool",
+                "Unrelated Tool",
+                "Has the safe empty search vector default.",
+                "https://example.com/unrelated-tool",
+                "published",
+            ),
+        )
+
+        matching_slugs = connection.execute(
+            """
+            SELECT slug
+            FROM tools
+            WHERE publication_status = 'published'
+              AND search_vector @@ websearch_to_tsquery('simple', %s)
+            ORDER BY slug
+            """,
+            ("workflow automation",),
+        ).fetchall()
+        default_vector_is_empty = connection.execute(
+            "SELECT search_vector = ''::tsvector FROM tools WHERE id = %s",
+            (unrelated_tool_id,),
+        ).fetchone()
+
+    assert matching_slugs == [("workflow-pilot",)]
+    assert default_vector_is_empty == (True,)
 
 
 @pytest.mark.integration

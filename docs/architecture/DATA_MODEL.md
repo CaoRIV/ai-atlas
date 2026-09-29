@@ -40,7 +40,7 @@ Mọi bảng entity chính có `id uuid PK`, `created_at`, `updated_at` trừ b�
 | `models` | `id`, `provider_id uuid? FK providers`, `name text`, `slug text` | unique slug; chỉ inventory cơ bản, không inference endpoint/model benchmark |
 | `categories` | `id`, `name text`, `slug text` | unique slug; 8 nhóm ban đầu |
 | `capabilities` | `id`, `key text`, `name text`, `description text` | unique key; controlled vocabulary như `pdf_extraction`, `vector_storage`, `text_generation` |
-| `tools` | `id`, `slug text`, `name text`, `description text`, `official_url text`, `provider_id uuid? FK`, `tags text[]`, `publication_status text`, `last_verified_at timestamptz?`, `revision int` | unique slug; status `draft/published/archived`; revision > 0; published cần source/date qua import validator |
+| `tools` | `id`, `slug text`, `name text`, `description text`, `official_url text`, `provider_id uuid? FK`, `tags text[]`, `publication_status text`, `last_verified_at timestamptz?`, `revision int`, `search_vector tsvector` | unique slug; status `draft/published/archived`; revision > 0; published cần source/date qua import validator; search_vector là projection do importer/server dựng, không nhận từ client |
 | `tool_categories` | `tool_id FK tools`, `category_id FK categories` | composite PK; mỗi published tool ≥ 1 category do importer kiểm tra |
 | `tool_models` | `tool_id FK tools`, `model_id FK models` | composite PK; chỉ ghi khi nguồn hỗ trợ quan hệ |
 | `tool_capabilities` | `tool_id FK tools`, `capability_id FK capabilities`, `fact_id uuid FK tool_facts` | composite PK; fact phải cùng tool và đúng capability key |
@@ -85,7 +85,7 @@ Không hard-delete tools/facts đã được tham chiếu; archive tools, giữ 
 
 ## 5. Search và embeddings
 
-- Keyword: weighted tsvector từ name/description/tags/capability labels, dùng cấu hình `simple` ban đầu cho dữ liệu Việt/Anh; thêm name/slug exact match. Chuẩn hóa Unicode tại import/query. Đo retrieval rồi mới chọn tokenizer khác.
+- Keyword: weighted `tools.search_vector` từ name/description/tags/category/capability labels, dùng cấu hình `simple` ban đầu cho dữ liệu Việt/Anh; importer/server phải dựng lại projection trong cùng transaction khi các field/labels đổi; thêm name/slug exact match. Chuẩn hóa Unicode tại import/query. Đo retrieval rồi mới chọn tokenizer khác.
 - GIN cho search vector; index `(publication_status,slug)`; indexes FK/join và `(tool_facts.key,verification_status,tool_id)`; JSONB indexes chỉ thêm nếu EXPLAIN chứng minh cần thiết.
 - Vector document: name, description, category/capability labels đã publish; không nhúng PII hoặc price volatile. `content_hash` và `source_revision` phát hiện embedding stale.
 - Catalog nhỏ dùng exact cosine distance, chưa cần HNSW/IVFFlat. Keyword và vector pool sau đó fusion và hard filtering theo [AI spec](AI_RECOMMENDATION.md).

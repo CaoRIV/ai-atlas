@@ -28,7 +28,7 @@ TASK-001 hoàn tất phần review. Sau xác nhận bổ sung, runtime không d�
 
 ## Checklist cấu hình cho TASK-002
 
-- [x] Pin dependency versions và kiểm tra Windows/DB; ADR-009 Accepted ngày 28/09/2026 sau khi host web/API và database Compose chạy được. ADR-010 vẫn chốt tại TASK-003.
+- [x] Pin dependency versions và kiểm tra Windows/DB; ADR-009 Accepted ngày 28/09/2026 sau khi host web/API và database Compose chạy được. ADR-010 Accepted ngày 29/09/2026 sau migration, fixtures và freshness query review của TASK-003.2.
 - DATABASE_URL; OIDC_ISSUER/AUDIENCE/CLIENT_ID/CLIENT_SECRET; SESSION_SECRET: env placeholders, không credentials trong docs/client.
 - LLM_PROVIDER và EMBEDDING_PROVIDER: Google Gemini; LLM_MODEL=gemini-3.5-flash-lite; EMBEDDING_MODEL=gemini-embedding-2; EMBEDDING_DIM=1536. Runtime chỉ có Gemini adapter; unit/CI inject transport để cô lập network.
 - GEMINI_API_KEY theo env server, không prefix public. AI_MONTHLY_BUDGET_USD chưa đặt; không suy ra unlimited hoặc free. Live smoke cần cờ opt-in và ghi model/usage/tariff thực tế.

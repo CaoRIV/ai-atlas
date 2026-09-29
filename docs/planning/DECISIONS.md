@@ -85,12 +85,12 @@ Ngày lập: 28/09/2026. `Accepted` nghĩa baseline kiến trúc đã được y
 
 ## ADR-010 — Typed facts và evidence freshness
 
-- **Status:** Proposed; chốt TASK-003 dựa trên fixtures và query review.
+- **Status:** Accepted, 29/09/2026; kiểm tra bằng migration, fixtures và freshness queries trong TASK-003.2.
 - **Context:** Boolean thiếu dữ liệu không thể coi như false; price/integration thay đổi độc lập record.
-- **Decision đề xuất:** Fact values typed theo vocabulary, evidence gắn fact revision, TTL theo loại, unknown fail closed ở hard constraints; rationale từ validated claims.
-- **Rationale:** Chặn giá/capabilities bịa hoặc stale, giữ kiến trúc comparison-compatible.
-- **Alternatives:** Chỉ last_verified_at cấp tool; mọi fact là text description; hoàn toàn để LLM judge grounding.
-- **Consequences:** Nhiều validation hơn và một số request phải no_match. TTL 30/90 ngày là policy cần đánh giá lại, không số liệu thị trường. Tài liệu [Data model](../architecture/DATA_MODEL.md) quy định chi tiết.
+- **Decision:** Mỗi fact dùng key thuộc vocabulary và JSON value có type theo key; trạng thái gồm `verified`, `unverified`, `unknown`. Unknown dùng JSON null với trạng thái `unknown` và fail closed ở hard constraints; `false` chỉ là phủ định có nguồn. Evidence ghi `fact_revision` và được dùng khi revision khớp fact hiện tại, `checked_at <= now < expires_at`; evidence revision cũ vẫn được giữ làm lịch sử. TTL mặc định là 30 ngày cho pricing và 90 ngày cho capabilities, integrations, platform/API, hardware, license và identity. Database enforce status/revision/source/time bounds cùng composite FK để capability fact thuộc đúng tool; importer Pydantic chịu trách nhiệm type theo key và semantic mapping capability. Rationale chỉ được dựng từ claims đã qua các điều kiện này.
+- **Rationale:** Chặn giá/capabilities bịa, stale hoặc unknown khỏi hard eligibility mà vẫn giữ provenance và kiến trúc comparison-compatible.
+- **Alternatives:** Chỉ `last_verified_at` cấp tool; mọi fact là text description; ép evidence revision làm FK tới revision hiện tại khiến không thể giữ lịch sử; hoàn toàn để LLM judge grounding.
+- **Consequences:** Nhiều validation hơn và một số request phải `no_match`/`needs_clarification`. Runtime/importer phải cùng tuân thủ vocabulary; TTL 30/90 ngày là policy cần đánh giá lại bằng dữ liệu vận hành. Tài liệu [Data model](../architecture/DATA_MODEL.md) quy định chi tiết.
 
 ## ADR-011 — Google Gemini cho LLM và embedding
 
@@ -110,6 +110,6 @@ Ngày lập: 28/09/2026. `Accepted` nghĩa baseline kiến trúc đã được y
 
 ## Các lựa chọn còn mở sau TASK-001 review
 
-Review TASK-001 ngày 28/09/2026: [quyết định và checklist cấu hình](BASELINE_REVIEW.md). Auth0/curation đã chốt ở ADR-007/008; provider/model/UI ở ADR-011/012. Chủ dự án cho phép development/test phát sinh chi phí Gemini thật; production budget/tier/region/retention vẫn phải chốt trước staging. ADR-009 đã chốt trong TASK-002; ADR-010 vẫn thuộc TASK-003.
+Review TASK-001 ngày 28/09/2026: [quyết định và checklist cấu hình](BASELINE_REVIEW.md). Auth0/curation đã chốt ở ADR-007/008; provider/model/UI ở ADR-011/012. Chủ dự án cho phép development/test phát sinh chi phí Gemini thật; production budget/tier/region/retention vẫn phải chốt trước staging. ADR-009 đã chốt trong TASK-002; ADR-010 được Accepted ngày 29/09/2026 sau fixtures/query review của TASK-003.2.
 
 Còn mở: tenant Auth0/region thực tế, Gemini tier/region/retention, hosting/budget/retention production. Exact dependency versions của foundation đã pin trong lockfiles; nâng cấp phải chạy lại lint/type/unit/build/integration. Lịch sử ADR-011 chỉ chốt provider; ADR-012 bổ sung model/dimension đã duyệt. Theo dõi OQ-001 đến OQ-006 tại [PRD](../product/PRD.md).

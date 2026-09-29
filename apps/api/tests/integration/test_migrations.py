@@ -22,7 +22,8 @@ CORE_TABLES = (
     "tool_models",
 )
 FACT_TABLES = ("tool_facts", "evidence", "tool_capabilities", "tool_embeddings")
-MIGRATED_TABLES = CORE_TABLES + FACT_TABLES
+IDENTITY_RUN_TABLES = ("users", "generation_runs")
+MIGRATED_TABLES = CORE_TABLES + FACT_TABLES + IDENTITY_RUN_TABLES
 FRESH_VERIFIED_TRUE_QUERY = """
     SELECT EXISTS (
         SELECT 1
@@ -72,15 +73,16 @@ def migration_database_url() -> Iterator[str]:
 
 
 @pytest.mark.integration
-def test_catalog_migration_applies_rolls_back_and_reapplies_cleanly(
+def test_schema_migrations_apply_roll_back_and_reapply_cleanly(
     migration_database_url: str,
 ) -> None:
     applied = upgrade(migration_database_url)
 
-    assert [migration.version for migration in applied] == [1, 2]
+    assert [migration.version for migration in applied] == [1, 2, 3]
     assert [(status.version, status.applied) for status in get_status(migration_database_url)] == [
         (1, True),
         (2, True),
+        (3, True),
     ]
 
     with psycopg.connect(migration_database_url) as connection:
@@ -103,7 +105,7 @@ def test_catalog_migration_applies_rolls_back_and_reapplies_cleanly(
 
     rolled_back = downgrade(migration_database_url, target_version=0)
 
-    assert [migration.version for migration in rolled_back] == [2, 1]
+    assert [migration.version for migration in rolled_back] == [3, 2, 1]
     with psycopg.connect(migration_database_url) as connection:
         remaining = connection.execute(
             """
@@ -117,7 +119,7 @@ def test_catalog_migration_applies_rolls_back_and_reapplies_cleanly(
 
     assert remaining == []
     assert history_count == (0,)
-    assert [migration.version for migration in upgrade(migration_database_url)] == [1, 2]
+    assert [migration.version for migration in upgrade(migration_database_url)] == [1, 2, 3]
 
 
 @pytest.mark.integration
@@ -561,3 +563,293 @@ def test_catalog_constraints_and_delete_rules(migration_database_url: str) -> No
 
     assert category_links == (0,)
     assert model_links == (0,)
+
+
+@pytest.mark.integration
+def test_user_identity_and_generation_run_constraints(migration_database_url: str) -> None:
+    upgrade(migration_database_url)
+    first_user_id = uuid4()
+    second_user_id = uuid4()
+
+    with psycopg.connect(migration_database_url, autocommit=True) as connection:
+        connection.execute(
+            """
+            INSERT INTO users (id, auth_issuer, auth_subject, display_name)
+            VALUES (%s, %s, %s, %s)
+            """,
+            (first_user_id, "https://issuer.example/", "subject-1", "First User"),
+        )
+        connection.execute(
+            """
+            INSERT INTO users (id, auth_issuer, auth_subject)
+            VALUES (%s, %s, %s)
+            """,
+            (second_user_id, "https://other-issuer.example/", "subject-1"),
+        )
+
+        with pytest.raises(psycopg.errors.UniqueViolation):
+            connection.execute(
+                """
+                INSERT INTO users (id, auth_issuer, auth_subject)
+                VALUES (%s, %s, %s)
+                """,
+                (uuid4(), "https://issuer.example/", "subject-1"),
+            )
+
+        running_run_id = uuid4()
+        connection.execute(
+            """
+            INSERT INTO generation_runs (
+                id, owner_id, status, pipeline_version, catalog_revision,
+                reserved_cost_usd, request_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                running_run_id,
+                first_user_id,
+                "running",
+                "pipeline-v1",
+                "catalog-v1",
+                "1.250000",
+                uuid4(),
+            ),
+        )
+        running_row = connection.execute(
+            """
+            SELECT usage, expires_at - created_at
+            FROM generation_runs
+            WHERE id = %s
+            """,
+            (running_run_id,),
+        ).fetchone()
+        assert running_row == ({}, timedelta(hours=24))
+
+        terminal_statuses = (
+            "complete",
+            "partial",
+            "no_match",
+            "needs_clarification",
+            "failed",
+        )
+        for status in terminal_statuses:
+            result = None if status == "failed" else Jsonb({"status": status})
+            connection.execute(
+                """
+                INSERT INTO generation_runs (
+                    id, owner_id, result, status, pipeline_version, catalog_revision,
+                    usage, reserved_cost_usd, estimated_cost_usd, request_id
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    uuid4(),
+                    first_user_id,
+                    result,
+                    status,
+                    "pipeline-v1",
+                    "catalog-v1",
+                    Jsonb({"input_tokens": 10, "output_tokens": 5}),
+                    "0.000000",
+                    "0.001000",
+                    uuid4(),
+                ),
+            )
+
+        stored_statuses = {
+            str(row[0])
+            for row in connection.execute(
+                "SELECT status FROM generation_runs WHERE owner_id = %s",
+                (first_user_id,),
+            ).fetchall()
+        }
+        assert stored_statuses == {"running", *terminal_statuses}
+
+        with pytest.raises(psycopg.errors.CheckViolation):
+            connection.execute(
+                """
+                INSERT INTO generation_runs (
+                    id, owner_id, status, pipeline_version, catalog_revision,
+                    reserved_cost_usd, request_id
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    uuid4(),
+                    first_user_id,
+                    "queued",
+                    "pipeline-v1",
+                    "catalog-v1",
+                    "0.000000",
+                    uuid4(),
+                ),
+            )
+
+        with pytest.raises(psycopg.errors.CheckViolation):
+            connection.execute(
+                """
+                INSERT INTO generation_runs (
+                    id, owner_id, status, pipeline_version, catalog_revision, usage,
+                    reserved_cost_usd, request_id
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    uuid4(),
+                    first_user_id,
+                    "running",
+                    "pipeline-v1",
+                    "catalog-v1",
+                    Jsonb([]),
+                    "0.000000",
+                    uuid4(),
+                ),
+            )
+
+        for reserved_cost, estimated_cost in (
+            ("-0.000001", "0.000000"),
+            ("0.000000", "-0.000001"),
+        ):
+            with pytest.raises(psycopg.errors.CheckViolation):
+                connection.execute(
+                    """
+                    INSERT INTO generation_runs (
+                        id, owner_id, status, pipeline_version, catalog_revision,
+                        reserved_cost_usd, estimated_cost_usd, request_id
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        uuid4(),
+                        first_user_id,
+                        "failed",
+                        "pipeline-v1",
+                        "catalog-v1",
+                        reserved_cost,
+                        estimated_cost,
+                        uuid4(),
+                    ),
+                )
+
+        now = datetime.now(UTC)
+        with pytest.raises(psycopg.errors.CheckViolation):
+            connection.execute(
+                """
+                INSERT INTO generation_runs (
+                    id, owner_id, status, pipeline_version, catalog_revision,
+                    reserved_cost_usd, expires_at, created_at, request_id
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    uuid4(),
+                    first_user_id,
+                    "running",
+                    "pipeline-v1",
+                    "catalog-v1",
+                    "0.000000",
+                    now + timedelta(hours=24, seconds=1),
+                    now,
+                    uuid4(),
+                ),
+            )
+
+
+@pytest.mark.integration
+def test_generation_run_ownership_ttl_cleanup_and_user_redaction(
+    migration_database_url: str,
+) -> None:
+    upgrade(migration_database_url)
+    owner_id = uuid4()
+    other_user_id = uuid4()
+    active_run_id = uuid4()
+    expired_run_id = uuid4()
+    other_run_id = uuid4()
+    now = datetime.now(UTC)
+
+    with psycopg.connect(migration_database_url, autocommit=True) as connection:
+        connection.execute(
+            """
+            INSERT INTO users (id, auth_issuer, auth_subject)
+            VALUES (%s, %s, %s), (%s, %s, %s)
+            """,
+            (
+                owner_id,
+                "https://issuer.example/",
+                "owner",
+                other_user_id,
+                "https://issuer.example/",
+                "other",
+            ),
+        )
+        for run_id, run_owner_id, created_at, expires_at in (
+            (active_run_id, owner_id, now, now + timedelta(hours=23)),
+            (expired_run_id, owner_id, now - timedelta(hours=25), now - timedelta(hours=1)),
+            (other_run_id, other_user_id, now, now + timedelta(hours=23)),
+        ):
+            connection.execute(
+                """
+                INSERT INTO generation_runs (
+                    id, owner_id, result, status, pipeline_version, catalog_revision,
+                    usage, reserved_cost_usd, estimated_cost_usd, expires_at,
+                    request_id, created_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    run_id,
+                    run_owner_id,
+                    Jsonb({"status": "complete", "run_id": str(run_id)}),
+                    "complete",
+                    "pipeline-v1",
+                    "catalog-v1",
+                    Jsonb({"input_tokens": 10, "output_tokens": 5}),
+                    "0.000000",
+                    "0.001000",
+                    expires_at,
+                    uuid4(),
+                    created_at,
+                ),
+            )
+
+        assert (
+            connection.execute(
+                "SELECT id FROM generation_runs WHERE id = %s AND owner_id = %s",
+                (active_run_id, other_user_id),
+            ).fetchone()
+            is None
+        )
+        assert connection.execute(
+            "SELECT id FROM generation_runs WHERE id = %s AND owner_id = %s",
+            (active_run_id, owner_id),
+        ).fetchone() == (active_run_id,)
+
+        cleaned = connection.execute(
+            """
+            UPDATE generation_runs
+            SET result = NULL, updated_at = CURRENT_TIMESTAMP
+            WHERE result IS NOT NULL AND expires_at <= CURRENT_TIMESTAMP
+            RETURNING id
+            """
+        ).fetchall()
+        assert cleaned == [(expired_run_id,)]
+        assert connection.execute(
+            "SELECT result IS NOT NULL FROM generation_runs WHERE id = %s",
+            (active_run_id,),
+        ).fetchone() == (True,)
+
+        connection.execute("DELETE FROM users WHERE id = %s", (owner_id,))
+        redacted_rows = connection.execute(
+            """
+            SELECT id, owner_id, result, status, usage, reserved_cost_usd, estimated_cost_usd
+            FROM generation_runs
+            WHERE id = ANY(%s)
+            ORDER BY id
+            """,
+            ([active_run_id, expired_run_id],),
+        ).fetchall()
+        assert len(redacted_rows) == 2
+        for row in redacted_rows:
+            assert row[1:4] == (None, None, "complete")
+            assert row[4] == {"input_tokens": 10, "output_tokens": 5}
+            assert str(row[5]) == "0.000000"
+            assert str(row[6]) == "0.001000"
+
+        other_row = connection.execute(
+            "SELECT owner_id, result IS NOT NULL FROM generation_runs WHERE id = %s",
+            (other_run_id,),
+        ).fetchone()
+        assert other_row == (other_user_id, True)

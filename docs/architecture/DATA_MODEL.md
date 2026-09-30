@@ -106,3 +106,130 @@ Update dùng `UPDATE ... WHERE owner_id=? AND version=?` trong transaction, tăn
 Không thêm quota service riêng trong MVP. `generation_runs.created_at` và owner phục vụ đếm requests theo cửa sổ; thêm index `(owner_id,created_at)` và `(created_at,status)`. Khi admission, transaction khóa user row để kiểm tra quota và tạo run `running`; mọi run đã reserve đều tính vào quota kể cả failed, trừ request bị từ chối trước admission. Với budget toàn hệ thống, dùng một PostgreSQL transaction advisory lock có key cố định cho tháng UTC để kiểm tra tổng settled cost cộng outstanding reservations và ghi reservation atomically. Thứ tự khóa luôn global budget rồi user để tránh deadlock.
 
 Run finished settle actual estimated cost và bỏ reservation trong transaction; request bị hủy/timeout vẫn ghi phần cost đã phát sinh. Cleanup run `running` quá deadline không được giải phóng khoản cost chưa rõ một cách lạc quan: giữ upper-bound như chi phí ước tính cho tới đối soát. Metadata retention 30 ngày phải giữ nguyên các rows còn thuộc tháng budget hiện tại hoặc reservation chưa được đối soát; khi tháng đã đóng mới áp dụng purge. Các chi tiết này cần concurrency tests ở TASK-015, không dựa vào bộ đếm trong memory.
+
+## 8. Curated JSON format — TASK-005.1
+
+Implementation: [curated_models.py](../../apps/api/src/ai_atlas_api/curated_models.py). Input là JSON UTF-8 không BOM, snake_case, với `schema_version: 1`. Dùng `CuratedCatalog.model_validate_json` tại file boundary; `model_validate` strict trên Python objects yêu cầu UUID/datetime objects đúng type. Có thể lấy JSON Schema bằng `CuratedCatalog.model_json_schema()`; không giữ một bản generated schema thứ hai dễ lệch models.
+
+### Document và entities
+
+Mỗi document có đủ arrays `providers`, `models`, `categories`, `capabilities`, `tools`; arrays có thể rỗng. [taxonomy.json](../../data/curated/taxonomy.json) chứa 8 categories đã chốt trong API contract và 15 capability definitions, không chứa tool/model/provider giả. Đây là vocabulary biên tập, không phải evidence khẳng định khả năng của tool. Các file tools sau này có thể reference UUID trong taxonomy; resolve references trên tập file/DB thuộc 005.2, không phải chức năng của parser 005.1.
+
+| Object | Fields bắt buộc |
+|---|---|
+| Provider | `id, slug, name, website_url` (URL hoặc null) |
+| Model | `id, slug, name, provider_id` (UUID hoặc null) |
+| Category | `id, slug, name` |
+| Capability definition | `id, key, name, description` |
+| Tool | `id, slug, name, description, official_url, provider_id, tags, publication_status, last_verified_at, category_ids, model_ids, capabilities, facts` |
+| Tool capability relation | `capability_id, fact_id` |
+| Fact | `id, key, value, verification_status, evidence` |
+| Evidence trong fact | `id, source_url, source_kind, checked_at, expires_at, checked_by` |
+
+Nullable fields vẫn phải ghi explicit null: tool `provider_id`, `last_verified_at`; mọi nullable field của structured fact values. Chỉ `curation_notes` của tool/fact và `excerpt` của evidence được omitted, mặc định null. Tool `publication_status` bắt buộc là draft/published/archived, không auto-publish. `checked_by` dùng maintainer handle, không cần email/PII.
+
+UUID của entity/fact/evidence do curator cấp một lần, commit và giữ ổn định; đổi name/slug không đổi ID. Taxonomy IDs đã được ghi cố định trong JSON, không generate lại lúc load. Slugs dùng lowercase letters/digits với hyphens; capability keys dùng lowercase letters/digits với underscores. Các text aliases trim và Unicode NFC; enum values phải khớp contract, không tự ép chữ hoa thành chữ thường. Name/tag tối đa 200 chars, description/long text 4000, slug/key 100, excerpt 1000 và curation_notes 2000. URLs dùng HTTPS với tối đa 2048 chars; đây chỉ là kiểm tra hình thức URL, không chứng minh nguồn chính thức và không fetch URL. Timestamps phải có timezone, được chuẩn hóa UTC; không nhận naive dates hoặc numeric epoch.
+
+### Fact values
+
+`CuratedFact` là union theo key: fixed keys và namespace patterns chỉ nhận value schema tương ứng. Tất cả nested objects forbid extra keys và dùng strict types; không ép string `"false"`/number 0 thành boolean. Numeric fields nhận JSON number hữu hạn, không âm; boolean không phải number.
+
+| Key | Value schema |
+|---|---|
+| pricing | Object hoặc null. Object có đủ `model, currency, monthly_min, billing_basis, usage_limits, free_tier`; model theo enum hiện có; currency là mã 3 chữ hoa hoặc null; monthly_min là number ≥ 0 hoặc null; billing_basis/usage_limits là text hoặc null; free_tier boolean hoặc null |
+| platforms | Array platform enum hiện có hoặc null |
+| api_available, offline_supported | Boolean hoặc null |
+| open_source | `{status: boolean|null, license: string|null}` hoặc null |
+| deployment_modes | Array cloud/local hoặc null |
+| min_ram_gb | Number ≥ 0 hoặc null |
+| identity | `{name, description, official_url, provider_id: UUID|null}` hoặc null |
+| capability:&lt;key&gt; | Boolean hoặc null; suffix theo capability key grammar |
+| model_usage:&lt;model_slug&gt; | Boolean hoặc null; suffix theo slug grammar |
+| integration:&lt;target_key&gt; | `{target_tool_id: UUID|null, target_name, mechanism: string|null, conditions: string[]|null}` hoặc null; target key lowercase letters/digits, phân cách bằng hyphen hoặc underscore |
+
+Theo ADR-010, top-level `value: null` bắt buộc `verification_status: unknown`, và unknown bắt buộc value null. False là phủ định, không phải unknown. Structured values có thể có subfields null: ví dụ pricing model đã biết nhưng usage_limits chưa biết, hoặc open_source.status chưa biết. Những null này không xác nhận miễn phí/false/khả năng đáp ứng hard constraint. `conditions: []` là biết không có điều kiện được ghi; null là chưa biết. Pricing text không tự trở thành cost/rate đã parse; eligibility/budget evaluator vẫn thuộc TASK-009.
+
+Ví dụ fact **synthetic chỉ minh họa format**, không đưa vào curated production data:
+
+```json
+{
+  "id": "10000000-0000-4000-8000-000000000001",
+  "key": "api_available",
+  "value": null,
+  "verification_status": "unknown",
+  "evidence": [],
+  "curation_notes": "Chưa có nguồn xác minh API."
+}
+```
+
+### Metadata do importer quản lý và phạm vi
+
+Facts nằm trong tool; evidence nằm trong fact. Importer sẽ map parent IDs thành `tool_facts.tool_id`, `evidence.fact_id` và assign `evidence.fact_revision` khớp revision của fact được nguồn chứng minh. Không nhận `revision`, `fact_revision`, `search_vector`, timestamps created_at/updated_at hoặc embeddings trong curated input; chúng do importer/database quản lý. Khi nội dung fact đổi, evidence UUID cũ không được tự gắn sang revision mới: giữ lịch sử, curator cung cấp evidence mới sau re-verification; enforce khi đối chiếu DB thuộc 005.2/005.4. Import lặp content không đổi phải giữ IDs/revisions. `last_verified_at` là ngày curator review record, không thay thế dates/TTL từng evidence.
+
+Parser 005.1 chỉ chứng minh type/shape/unknown-null invariant. Semantic validations về source syntax, uniqueness, FK existence, identity agreement, time ordering/TTL/freshness và điều kiện publish đã triển khai ở 005.2, chi tiết tại mục 9; source authenticity vẫn do maintainer xác minh thủ công. CLI dry-run thuộc 005.3, atomic upsert/revisions/reindex thuộc 005.4, seed 15 tools thật thuộc 005.5. Curation notes và excerpts là nội dung private/untrusted, không được thêm vào public API projection hoặc prompt như instructions. Synthetic fixtures chỉ nằm trong tests, tách khỏi `data/curated`.
+
+## 9. Semantic import validation — TASK-005.2
+
+[validate_catalog](../../apps/api/src/ai_atlas_api/curated_validation.py) nhận `Sequence[CuratedCatalog]`, `now` có timezone và optional `CatalogSnapshot`. Parse JSON bằng models 005.1 trước, rồi validate toàn bộ batch; type/extra-key sai bị Pydantic chặn trước semantic stage. Không có snapshot nghĩa là đối chiếu catalog rỗng, không phải bằng chứng DB hiện tại không có conflicts. Khi update/import vào DB, caller phải cung cấp snapshot của DB đích.
+
+Validator không sửa input, không ghi DB, không fetch/DNS-resolve URL và không gọi LLM. Thành công return None; thất bại raise `CuratedValidationError` với tuple `ValidationIssue(field, code)`, field dạng `documents[0].tools[0].facts[1].evidence[0].id`. Errors chỉ chứa paths/codes, không echo source URL, credentials, excerpt hoặc checked_by. CLI 005.3 phải render Pydantic errors bằng loc/type, không in raw ValidationError chứa input values.
+
+### Source và thời gian
+
+- HTTPS được kiểm tra ở schema. Semantic stage yêu cầu DNS hostname có hình thức public: không credentials, IP literal, single-label hostname, localhost/local/internal, hoặc reserved placeholders test/invalid/example và example.com/net/org (kể cả subdomains). Quy tắc áp dụng provider.website_url, tool.official_url, identity.official_url và mọi evidence.source_url. Cho phép citation fragments và public-looking subdomains; không suy ra website thuộc cùng provider chỉ từ hostname.
+- Đây là kiểm tra syntax/safety, **không xác minh hostname thực sự public, URL truy cập được hoặc nguồn là chính thức**. Source kind vẫn là official_docs/official_pricing/official_site do curator biên tập; maintainer phải xác minh ownership, nội dung và claim thủ công. Không tự mở URL.
+- Mọi evidence cần `checked_at <= now`, `expires_at > checked_at`, window tối đa 30 ngày cho pricing, 90 ngày cho các keys khác. Có thể đặt TTL ngắn hơn. Freshness là `checked_at <= now < expires_at`; checked_at đúng now hợp lệ, expires_at đúng now đã stale. Validator dùng cùng một clock cho toàn batch, không thay timestamps do curator ghi.
+- Fact marked verified cần ít nhất một evidence hợp lệ còn hạn; validate mọi source, không bỏ qua nguồn sai chỉ vì có source khác fresh. Không tự downgrade thành unverified. Muốn giữ stale value thì curator ghi unverified; evidence hết hạn vẫn được giữ nếu window/source hợp lệ. Unknown/null giữ đúng invariant 005.1. Value false (kể cả open_source.status=false) phải có evidence; với verified false, evidence phải fresh.
+- last_verified_at không được ở tương lai. Published tool bắt buộc ngày review và ít nhất một category tồn tại; ngày review không thay thế freshness của identity/facts.
+
+### Uniqueness, references và publication
+
+- Index toàn bộ documents trước khi validate references, không phụ thuộc thứ tự taxonomy/tools files. Kết hợp incoming definitions với snapshot DB theo UUID: incoming có thể sửa name/slug cùng ID; uniqueness được kiểm tra trên proposed final identities. Không regenerate IDs theo slug.
+- UUID và slug/key không được duplicate trong mỗi entity namespace (providers/models/categories/capabilities/tools). Fact IDs và evidence IDs unique trên cả batch; fact keys unique theo tool. Category/model/capability relations không được duplicate composite key.
+- Kiểm provider references của tool/model/identity; category/model/capability IDs; capability fact phải thuộc chính tool và đúng key `capability:<definition.key>`. Dynamic capability/model_usage fact keys phải reference vocabulary/model slug hiện có, kể cả false/unknown facts; không tự thêm capability/model.
+- Capability/model relations phải có đúng fact verified true và fresh evidence; false, unknown, unverified, stale hoặc thiếu fact không tạo relation hợp lệ. Draft/archived có thể thiếu identity/category/review date, nhưng nếu khai báo relations vẫn phải đáp ứng relation gate. Giữ provisional facts mà chưa công bố relation bằng arrays rỗng, không ép unknown thành false.
+- Published tool cần identity verified fresh. Identity value phải đồng ý chính xác với tool.name/description/official_url/provider_id khi có value, không cho metadata và evidence fact mô tả hai tool khác nhau. Unknown các nhóm pricing/API/platform khác không tự chặn publication nếu identity/category/date hợp lệ.
+- Integration target_tool_id non-null phải tồn tại và target_name khớp tên target trong proposed catalog/snapshot; null cho phép named external service. Không suy capability, compatibility hoặc publication status từ target name/category/provider.
+
+### DB snapshot và bảo toàn provenance
+
+[load_catalog_snapshot](../../apps/api/src/ai_atlas_api/curated_snapshot.py) dùng connection convention của CatalogRepository: một read-only repeatable-read transaction, connect timeout 3s và statement timeout 5s. Snapshot có entity identities, current fact values/revisions/owners và **toàn bộ evidence history**, không chỉ fresh/current sources; 005.3 bổ sung complete import-owned metadata, declared fact status và tool join sets cho diff. Không có DB hoặc DB lỗi raise sanitized CatalogError/CATALOG_UNAVAILABLE; không fallback sang empty snapshot. Persisted evidence sai shape raise sanitized stored_evidence_shape_invalid, không echo dữ liệu raw.
+
+- Existing fact UUID không được chuyển sang tool khác hoặc key khác; một (tool_id,key) đã có fact UUID không được thay bằng UUID mới. Các IDs này là identity của claim, không phải dữ liệu UI slug.
+- Existing evidence UUID không được đổi fact owner hoặc bất kỳ source metadata nào (URL/kind/dates/reviewer/excerpt). Evidence cùng UUID chỉ được dùng cho fact value hiện tại khi fact_revision khớp current revision. Đổi value hoặc dùng evidence revision cũ cần evidence UUID mới sau re-verification, không sửa nguồn lịch sử để làm nó trông còn hiệu lực.
+- JSON number 8 và 8.0 được coi cùng value như PostgreSQL JSONB; JSON true không bằng number 1. Không dùng Python bool/int equality để vượt qua value-change guard.
+- Re-import không đổi content có thể giữ evidence IDs và không mutate snapshot. Validator chỉ kiểm proposed changes; 005.4 sẽ quyết định revisions và atomic writes. Snapshot/read-only validation không khóa một update tương lai: **005.4 phải kiểm tra lại trong write transaction** trước upsert và giữ database constraints, không coi dry-run là authorization để ghi bất kỳ state mới nào.
+
+005.2 không cung cấp write/import action hoặc sửa schema DB. CLI dry-run/diff đã triển khai ở 005.3, chi tiết mục 10; 005.4 chịu trách nhiệm rollback/upsert/revisions/reindex. Synthetic fixtures chỉ ở tests hoặc DB tạm, không nhập vào data/curated.
+
+## 10. Curated dry-run và diff — TASK-005.3
+
+Implementation: [curated_cli.py](../../apps/api/src/ai_atlas_api/curated_cli.py), [curated_diff.py](../../apps/api/src/ai_atlas_api/curated_diff.py). Entry point: `python -m ai_atlas_api.curated_cli dry-run [--format text|json] FILE [FILE ...]`; chạy từ repo root với `PYTHONPATH=apps/api/src`. Chỉ có dry-run, không có write/import flag.
+
+### Input và snapshot
+
+- Đọc regular JSON UTF-8 files tường minh; không tự enumerate directory hoặc tải URLs. Giới hạn 8 MiB/file, 32 MiB/tổng batch; duplicate JSON object keys bị từ chối thay vì last-value-wins. Parsing dùng JSON mode của strict models 005.1.
+- Resolve DB từ `DATABASE_URL` environment hoặc `.env` theo config convention hiện có; không nhận connection secret qua argv. CLI chỉ load database setting, không phụ thuộc cấu hình LLM. DB phải đã migrate; thiếu/lỗi DB không fallback catalog rỗng.
+- Parse tất cả files trước; có file/schema error thì không đọc DB hoặc trả partial diff. Batch hợp lệ về shape được validate toàn bộ bằng 005.2 và một UTC `as_of` tại lúc bắt đầu command.
+- Snapshot mở rộng có đầy đủ import-owned fields của 5 entity tables, tool join sets, current facts (value + declared verification_status) và evidence history trong **cùng read-only repeatable-read transaction**. Validation-only snapshots có thể thiếu `records`, nhưng diff của existing ID thiếu content/fields phải fail `snapshot_content_incomplete`, không đoán unchanged/updated.
+
+### Semantics và output
+
+- Chỉ preview records xuất hiện trong input. Entity/fact/evidence omitted **không được suy là deletion**; retained facts/history không bị xóa. Archive tool bằng publication_status tường minh, không bỏ UUID khỏi file để delete.
+- Với tool được cung cấp, category_ids/model_ids/capabilities là proposed complete join sets: additions/removals được báo changed field, không tạo deletion action cho taxonomy/model/fact records. 005.4 phải thực hiện replacement của join sets trong transaction. Fact hỗ trợ declared relation vẫn phải có trong tool input và thỏa validator 005.2.
+- Một row cho mỗi provider/model/category/capability/tool/fact/evidence UUID: status `added`, `updated`, `unchanged`; `changed_fields` là field names đã sort, không chứa before/after values. Fact `parent_id` là tool UUID, evidence `parent_id` là fact UUID; entity rows có parent_id null. CLI entity `facts` ứng với DB tool_facts.
+- Tool row so metadata + join sets; fact/evidence changes báo ở rows riêng, không tự đổi tool row thành updated chỉ vì child đổi. Summary đếm **incoming rows**, không đếm toàn catalog hoặc side effects/revisions tương lai. Server-owned timestamps, revisions, fact_revision, search/embedding projections và private curation_notes không thuộc diff.
+- Join sets không phụ thuộc thứ tự; tags và arrays trong fact values giữ thứ tự JSON. UUID/timestamps được serialize canonical UTC; JSON number 8 và 8.0 bằng nhau, true khác 1; dict key order không gây update. Source metadata đã chuẩn hóa theo CuratedEvidence, provenance gate vẫn kiểm owner/current revision/value trước diff.
+- Sort rows theo providers/models/categories/capabilities/tools/facts/evidence, rồi UUID; cùng proposed batch khác thứ tự files cho cùng changes. `as_of` thay đổi giữa commands.
+- JSON stdout có command/status/as_of/summary/changes/errors. Summary có added/updated/unchanged; errors chỉ field/code với document index theo thứ tự argv. Unknown property names bị che thành unknown_key; không echo input values, file contents/paths, URLs, reviewer, excerpt, notes, connection secrets hoặc traceback. Text mặc định có cùng counts/rows/errors.
+- Lỗi bất kỳ khiến changes rỗng và summary bằng 0: đây là **diff không được tạo**, không phải xác nhận catalog unchanged. Caller phải kiểm exit code và status. Argument syntax errors theo argparse: usage + CLI_ARGS_INVALID ở stderr, không JSON stdout hoặc echo raw argument values.
+
+| Exit | Status / ý nghĩa |
+|---|---|
+| 0 | valid: batch hợp lệ, kể cả có added/updated; preview không ghi DB |
+| 2 | invalid: argv/file/JSON/schema/semantic validation hoặc invalid persisted evidence/snapshot content |
+| 3 | unavailable: DATABASE_URL thiếu hoặc target DB không đọc được; CATALOG_UNAVAILABLE |
+| 4 | error: lỗi khác ở CLI/config boundary; INTERNAL_ERROR đã sanitize, không partial success |
+
+Dry-run không bump revisions, sửa joins, invalidate embeddings, reindex hoặc xác minh nội dung source. Role chỉ có SELECT cũng chạy được. 005.4 phải validate lại trong write transaction vì snapshot có thể cũ ngay sau command; output valid không phải write authorization. 005.5/005.6 và import action chưa triển khai.
+

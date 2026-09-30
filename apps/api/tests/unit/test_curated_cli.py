@@ -4,7 +4,13 @@ from pathlib import Path
 
 import pytest
 
-from ai_atlas_api.curated_cli import MAX_BATCH_BYTES, MAX_FILE_BYTES, main, run_dry_run
+from ai_atlas_api.curated_cli import (
+    MAX_BATCH_BYTES,
+    MAX_FILE_BYTES,
+    main,
+    run_dry_run,
+    run_import,
+)
 
 NOW = datetime(2026, 9, 30, 12, tzinfo=UTC)
 EMPTY = {
@@ -127,11 +133,27 @@ def test_bad_second_file_reports_original_document_index_and_no_partial_diff(
     assert report.changes == ()
 
 
+def test_import_reuses_bounded_parser_and_requires_database_after_valid_parse(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "catalog.json"
+    path.write_text("{", encoding="utf-8")
+    invalid = run_import([path], None, now=NOW)
+    assert invalid.command == "import"
+    assert invalid.exit_code == 2
+    assert invalid.errors[0].code == "json_invalid"
+    path.write_text(json.dumps(EMPTY), encoding="utf-8")
+    unavailable = run_import([path], None, now=NOW)
+    assert unavailable.command == "import"
+    assert unavailable.exit_code == 3
+    assert unavailable.errors[0].code == "CATALOG_UNAVAILABLE"
+
+
 @pytest.mark.parametrize(
     "arguments",
     [
         [],
-        ["import", "private-password-DO-NOT-ECHO"],
+        ["write", "private-password-DO-NOT-ECHO"],
         ["dry-run"],
         ["dry-run", "--format", "private-password-DO-NOT-ECHO", "file.json"],
         ["dry-run", "--database-url", "postgresql://user:private-password-DO-NOT-ECHO@host/db"],

@@ -198,13 +198,13 @@ Validator không sửa input, không ghi DB, không fetch/DNS-resolve URL và kh
 - Existing fact UUID không được chuyển sang tool khác hoặc key khác; một (tool_id,key) đã có fact UUID không được thay bằng UUID mới. Các IDs này là identity của claim, không phải dữ liệu UI slug.
 - Existing evidence UUID không được đổi fact owner hoặc bất kỳ source metadata nào (URL/kind/dates/reviewer/excerpt). Evidence cùng UUID chỉ được dùng cho fact value hiện tại khi fact_revision khớp current revision. Đổi value hoặc dùng evidence revision cũ cần evidence UUID mới sau re-verification, không sửa nguồn lịch sử để làm nó trông còn hiệu lực.
 - JSON number 8 và 8.0 được coi cùng value như PostgreSQL JSONB; JSON true không bằng number 1. Không dùng Python bool/int equality để vượt qua value-change guard.
-- Re-import không đổi content có thể giữ evidence IDs và không mutate snapshot. Validator chỉ kiểm proposed changes; 005.4 sẽ quyết định revisions và atomic writes. Snapshot/read-only validation không khóa một update tương lai: **005.4 phải kiểm tra lại trong write transaction** trước upsert và giữ database constraints, không coi dry-run là authorization để ghi bất kỳ state mới nào.
+- Re-import không đổi content có thể giữ evidence IDs và không mutate snapshot. Importer 005.4 kiểm tra lại trong write transaction, quyết định revisions và giữ database constraints; snapshot/dry-run không khóa update tương lai và không phải authorization để ghi state mới.
 
-005.2 không cung cấp write/import action hoặc sửa schema DB. CLI dry-run/diff đã triển khai ở 005.3, chi tiết mục 10; 005.4 chịu trách nhiệm rollback/upsert/revisions/reindex. Synthetic fixtures chỉ ở tests hoặc DB tạm, không nhập vào data/curated.
+005.2 tự nó không cung cấp write/import action hoặc sửa schema DB. CLI dry-run/diff đã triển khai ở 005.3 (mục 10); atomic rollback/upsert/revisions/reindex đã triển khai ở 005.4 (mục 11). Synthetic fixtures chỉ ở tests hoặc DB tạm, không nhập vào data/curated.
 
 ## 10. Curated dry-run và diff — TASK-005.3
 
-Implementation: [curated_cli.py](../../apps/api/src/ai_atlas_api/curated_cli.py), [curated_diff.py](../../apps/api/src/ai_atlas_api/curated_diff.py). Entry point: `python -m ai_atlas_api.curated_cli dry-run [--format text|json] FILE [FILE ...]`; chạy từ repo root với `PYTHONPATH=apps/api/src`. Chỉ có dry-run, không có write/import flag.
+Implementation dùng [curated_cli.py](../../apps/api/src/ai_atlas_api/curated_cli.py), [curated_diff.py](../../apps/api/src/ai_atlas_api/curated_diff.py). Dry-run entry point: `python -m ai_atlas_api.curated_cli dry-run [--format text|json] FILE [FILE ...]`; chạy từ repo root với `PYTHONPATH=apps/api/src`. Mục này mô tả read-only action; write action `import` thuộc mục 11.
 
 ### Input và snapshot
 
@@ -216,7 +216,7 @@ Implementation: [curated_cli.py](../../apps/api/src/ai_atlas_api/curated_cli.py)
 ### Semantics và output
 
 - Chỉ preview records xuất hiện trong input. Entity/fact/evidence omitted **không được suy là deletion**; retained facts/history không bị xóa. Archive tool bằng publication_status tường minh, không bỏ UUID khỏi file để delete.
-- Với tool được cung cấp, category_ids/model_ids/capabilities là proposed complete join sets: additions/removals được báo changed field, không tạo deletion action cho taxonomy/model/fact records. 005.4 phải thực hiện replacement của join sets trong transaction. Fact hỗ trợ declared relation vẫn phải có trong tool input và thỏa validator 005.2.
+- Với tool được cung cấp, category_ids/model_ids/capabilities là proposed complete join sets: additions/removals được báo changed field, không tạo deletion action cho taxonomy/model/fact records. Import 005.4 thực hiện replacement các join sets trong cùng transaction. Fact hỗ trợ declared relation vẫn phải có trong tool input và thỏa validator 005.2.
 - Một row cho mỗi provider/model/category/capability/tool/fact/evidence UUID: status `added`, `updated`, `unchanged`; `changed_fields` là field names đã sort, không chứa before/after values. Fact `parent_id` là tool UUID, evidence `parent_id` là fact UUID; entity rows có parent_id null. CLI entity `facts` ứng với DB tool_facts.
 - Tool row so metadata + join sets; fact/evidence changes báo ở rows riêng, không tự đổi tool row thành updated chỉ vì child đổi. Summary đếm **incoming rows**, không đếm toàn catalog hoặc side effects/revisions tương lai. Server-owned timestamps, revisions, fact_revision, search/embedding projections và private curation_notes không thuộc diff.
 - Join sets không phụ thuộc thứ tự; tags và arrays trong fact values giữ thứ tự JSON. UUID/timestamps được serialize canonical UTC; JSON number 8 và 8.0 bằng nhau, true khác 1; dict key order không gây update. Source metadata đã chuẩn hóa theo CuratedEvidence, provenance gate vẫn kiểm owner/current revision/value trước diff.
@@ -231,5 +231,30 @@ Implementation: [curated_cli.py](../../apps/api/src/ai_atlas_api/curated_cli.py)
 | 3 | unavailable: DATABASE_URL thiếu hoặc target DB không đọc được; CATALOG_UNAVAILABLE |
 | 4 | error: lỗi khác ở CLI/config boundary; INTERNAL_ERROR đã sanitize, không partial success |
 
-Dry-run không bump revisions, sửa joins, invalidate embeddings, reindex hoặc xác minh nội dung source. Role chỉ có SELECT cũng chạy được. 005.4 phải validate lại trong write transaction vì snapshot có thể cũ ngay sau command; output valid không phải write authorization. 005.5/005.6 và import action chưa triển khai.
+Dry-run không bump revisions, sửa joins, invalidate embeddings, reindex hoặc xác minh nội dung source. Role chỉ có SELECT cũng chạy được. Atomic import đã triển khai ở 005.4, nhưng dry-run output vẫn không phải write authorization. 005.5/005.6 chưa triển khai.
+
+## 11. Atomic curated import — TASK-005.4
+
+Implementation: [curated_import.py](../../apps/api/src/ai_atlas_api/curated_import.py); CLI action: `python -m ai_atlas_api.curated_cli import [--format text|json] FILE [FILE ...]`. Input parsing, bounds, output redaction và exit codes dùng cùng contract mục 10. Khác dry-run, import ghi vào database được cấu hình; không có `--database-url` để tránh connection secret trong process arguments.
+
+### Transaction và concurrency
+
+- Parse toàn bộ files trước khi mở write transaction. Sau đó importer mở connection timeout 3s, transaction `SERIALIZABLE`, `lock_timeout=5s`, `statement_timeout=15s` và lấy transaction advisory lock cố định trước khi đọc snapshot. Mọi importer instance tuân thủ cùng lock nên chạy tuần tự; lock tự release khi commit/rollback. External SQL writers không dùng lock chỉ còn database constraints, không được coi là supported curation path hoặc được đảm bảo bởi importer lock.
+- Snapshot, semantic validation 005.2, diff, import-transition guards, upserts, join replacement, revisions, evidence inserts, embedding invalidation và search reindex đều nằm trong **một transaction**. Validation hoặc database error không commit partial entities; CLI trả changes rỗng. Database/lock/statement errors được sanitize thành exit 3/CATALOG_UNAVAILABLE.
+- Import revalidate state hiện tại sau khi đã lấy lock; dry-run trước đó chỉ phục vụ review. Không dùng dry-run output làm write plan hoặc authorization.
+
+### Upsert, revisions và history
+
+- Chỉ rows có trong input được thêm/cập nhật; omitted entity/tool/fact/evidence vẫn giữ nguyên. Không hard-delete. Với một incoming tool, ba arrays category_ids/model_ids/capabilities là complete sets và được replace nếu diff thay đổi; archive phải ghi publication_status=archived tường minh.
+- Entity/tool/fact upserts theo stable UUID. Unchanged rows không UPDATE, nên giữ nguyên updated_at/revision. Conflict slug/key/FK hoặc lỗi giữa batch rollback toàn transaction.
+- Tool mới có revision 1. Existing tool tăng đúng **một** revision khi metadata hoặc một trong ba relation sets đổi. Rename category slug/name hoặc capability key/name cũng tăng revision các linked tools và dựng lại projection, kể cả tool không có trong batch. Fact/evidence-only changes không bump tool revision vì không nằm trong search/embedding document.
+- Fact mới có revision 1; existing fact chỉ tăng một revision khi value hoặc declared verification_status đổi. Add evidence cho value/status không đổi gắn current fact_revision và không bump fact/tool. Evidence là append-only: existing evidence không update/delete; value/status revision mới cần evidence UUID mới để trở thành current, evidence cũ giữ fact_revision lịch sử.
+- Transition existing fact sang verified cần ít nhất một evidence UUID mới, fresh/valid; không cho evidence cũ tự trở thành nguồn của revision mới. Capability key hoặc model slug đã được fact namespace/relation tham chiếu không được rename, vì fact key là immutable; đổi display name vẫn được phép.
+
+### Search projection và embeddings
+
+Trong cùng transaction, importer xóa mọi tool_embeddings của tool có tool revision/projection đổi; TASK-008 sẽ rebuild embeddings. search_vector dùng PostgreSQL simple config: tool name weight A; description/tags weight B; category slug+name và linked capability key+name weight C. Reindex chạy sau join replacement, nên search không thấy projection nửa cũ/nửa mới. Category/capability label updates propagate tới linked tools không cần include lại tool records.
+
+Import không fetch/verify source content, không gọi LLM, không tạo seed tool và không cung cấp historical rollback command. “Rollback” trong 005.4 là database transaction rollback khi batch lỗi; revisions/evidence history được giữ để audit, không phải event-sourced restore API. 005.5 chịu trách nhiệm 15 curated tools; 005.6 kiểm tra importer + public API end-to-end.
+
 

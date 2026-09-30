@@ -14,6 +14,7 @@ from pydantic_settings import BaseSettings
 from ai_atlas_api.catalog import CatalogError
 from ai_atlas_api.config import Settings
 from ai_atlas_api.curated_diff import CatalogChange, build_catalog_diff
+from ai_atlas_api.curated_import import import_catalog
 from ai_atlas_api.curated_models import CuratedCatalog
 from ai_atlas_api.curated_snapshot import load_catalog_snapshot
 from ai_atlas_api.curated_validation import (
@@ -57,6 +58,7 @@ class DryRunReport:
     status: Literal["valid", "invalid", "unavailable", "error"]
     changes: tuple[CatalogChange, ...] = ()
     errors: tuple[ValidationIssue, ...] = ()
+    command: Literal["dry-run", "import"] = "dry-run"
 
     @property
     def exit_code(self) -> int:
@@ -77,7 +79,7 @@ class DryRunReport:
                 }
             )
         return {
-            "command": "dry-run",
+            "command": self.command,
             "status": self.status,
             "as_of": self.as_of.astimezone(UTC).isoformat().replace("+00:00", "Z"),
             "summary": summary,
@@ -155,11 +157,35 @@ def run_dry_run(paths: Sequence[Path], database_url: str | None, *, now: datetim
         return DryRunReport(now, "unavailable", errors=(ValidationIssue("existing", error.code),))
 
 
+def run_import(paths: Sequence[Path], database_url: str | None, *, now: datetime) -> DryRunReport:
+    if now.tzinfo is None or now.utcoffset() is None:
+        raise ValueError("validation_clock_requires_timezone")
+    if not paths:
+        return DryRunReport(
+            now,
+            "invalid",
+            errors=(ValidationIssue("documents", "input_required"),),
+            command="import",
+        )
+    documents, issues = _read_documents(paths)
+    if issues:
+        return DryRunReport(now, "invalid", errors=tuple(issues), command="import")
+    try:
+        changes = import_catalog(database_url, documents, now=now)
+        return DryRunReport(now, "valid", changes, command="import")
+    except CuratedValidationError as error:
+        return DryRunReport(now, "invalid", errors=error.issues, command="import")
+    except CatalogError as error:
+        return DryRunReport(
+            now, "unavailable", errors=(ValidationIssue("existing", error.code),), command="import"
+        )
+
+
 def _render_text(report: DryRunReport) -> str:
     data = report.to_dict()
     summary = data["summary"]
     lines = [
-        f"{report.status.upper()} dry-run as_of={data['as_of']} "
+        f"{report.status.upper()} {report.command} as_of={data['as_of']} "
         f"added={summary['added']} updated={summary['updated']} unchanged={summary['unchanged']}"
     ]
     for change in report.changes:
@@ -171,20 +197,35 @@ def _render_text(report: DryRunReport) -> str:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = _ArgumentParser(description="Preview curated catalog changes; never writes to DB.")
+    parser = _ArgumentParser(description="Validate or import curated catalog files.")
     commands = parser.add_subparsers(dest="command", required=True)
     dry_run = commands.add_parser("dry-run", help="Validate files against the configured database.")
     dry_run.add_argument("files", type=Path, nargs="+")
     dry_run.add_argument("--format", choices=("text", "json"), default="text")
+    import_command = commands.add_parser(
+        "import", help="Validate and atomically apply files to the configured database."
+    )
+    import_command.add_argument("files", type=Path, nargs="+")
+    import_command.add_argument("--format", choices=("text", "json"), default="text")
     args = parser.parse_args(argv)
     now = datetime.now(UTC)
     try:
         secret = _DatabaseSettings().database_url
-        report = run_dry_run(args.files, secret.get_secret_value() if secret else None, now=now)
+        database_url = secret.get_secret_value() if secret else None
+        report = (
+            run_dry_run(args.files, database_url, now=now)
+            if args.command == "dry-run"
+            else run_import(args.files, database_url, now=now)
+        )
     except Exception:
         # CLI boundary: operational/programming failures are explicit, never success,
         # and must not print traceback/exception values containing connection secrets.
-        report = DryRunReport(now, "error", errors=(ValidationIssue("command", "INTERNAL_ERROR"),))
+        report = DryRunReport(
+            now,
+            "error",
+            errors=(ValidationIssue("command", "INTERNAL_ERROR"),),
+            command=args.command,
+        )
     print(
         json.dumps(report.to_dict(), ensure_ascii=True)
         if args.format == "json"

@@ -193,12 +193,43 @@ Validator không sửa input, không ghi DB, không fetch/DNS-resolve URL và kh
 
 ### DB snapshot và bảo toàn provenance
 
-[load_catalog_snapshot](../../apps/api/src/ai_atlas_api/curated_snapshot.py) dùng connection convention của CatalogRepository: một read-only repeatable-read transaction, connect timeout 3s và statement timeout 5s. Snapshot có entity identities, current fact values/revisions/owners và **toàn bộ evidence history**, không chỉ fresh/current sources. Không có DB hoặc DB lỗi raise sanitized CatalogError/CATALOG_UNAVAILABLE; không fallback sang empty snapshot. Persisted evidence sai shape raise sanitized stored_evidence_shape_invalid, không echo dữ liệu raw.
+[load_catalog_snapshot](../../apps/api/src/ai_atlas_api/curated_snapshot.py) dùng connection convention của CatalogRepository: một read-only repeatable-read transaction, connect timeout 3s và statement timeout 5s. Snapshot có entity identities, current fact values/revisions/owners và **toàn bộ evidence history**, không chỉ fresh/current sources; 005.3 bổ sung complete import-owned metadata, declared fact status và tool join sets cho diff. Không có DB hoặc DB lỗi raise sanitized CatalogError/CATALOG_UNAVAILABLE; không fallback sang empty snapshot. Persisted evidence sai shape raise sanitized stored_evidence_shape_invalid, không echo dữ liệu raw.
 
 - Existing fact UUID không được chuyển sang tool khác hoặc key khác; một (tool_id,key) đã có fact UUID không được thay bằng UUID mới. Các IDs này là identity của claim, không phải dữ liệu UI slug.
 - Existing evidence UUID không được đổi fact owner hoặc bất kỳ source metadata nào (URL/kind/dates/reviewer/excerpt). Evidence cùng UUID chỉ được dùng cho fact value hiện tại khi fact_revision khớp current revision. Đổi value hoặc dùng evidence revision cũ cần evidence UUID mới sau re-verification, không sửa nguồn lịch sử để làm nó trông còn hiệu lực.
 - JSON number 8 và 8.0 được coi cùng value như PostgreSQL JSONB; JSON true không bằng number 1. Không dùng Python bool/int equality để vượt qua value-change guard.
 - Re-import không đổi content có thể giữ evidence IDs và không mutate snapshot. Validator chỉ kiểm proposed changes; 005.4 sẽ quyết định revisions và atomic writes. Snapshot/read-only validation không khóa một update tương lai: **005.4 phải kiểm tra lại trong write transaction** trước upsert và giữ database constraints, không coi dry-run là authorization để ghi bất kỳ state mới nào.
 
-005.2 không cung cấp CLI diff/import, không sửa schema DB và chưa seed catalog. 005.3 tiếp theo là CLI dry-run dùng parser + validator + snapshot; 005.4 chịu trách nhiệm rollback/upsert/revisions/reindex. Synthetic fixtures chỉ ở tests hoặc DB tạm, không nhập vào data/curated.
+005.2 không cung cấp write/import action hoặc sửa schema DB. CLI dry-run/diff đã triển khai ở 005.3, chi tiết mục 10; 005.4 chịu trách nhiệm rollback/upsert/revisions/reindex. Synthetic fixtures chỉ ở tests hoặc DB tạm, không nhập vào data/curated.
+
+## 10. Curated dry-run và diff — TASK-005.3
+
+Implementation: [curated_cli.py](../../apps/api/src/ai_atlas_api/curated_cli.py), [curated_diff.py](../../apps/api/src/ai_atlas_api/curated_diff.py). Entry point: `python -m ai_atlas_api.curated_cli dry-run [--format text|json] FILE [FILE ...]`; chạy từ repo root với `PYTHONPATH=apps/api/src`. Chỉ có dry-run, không có write/import flag.
+
+### Input và snapshot
+
+- Đọc regular JSON UTF-8 files tường minh; không tự enumerate directory hoặc tải URLs. Giới hạn 8 MiB/file, 32 MiB/tổng batch; duplicate JSON object keys bị từ chối thay vì last-value-wins. Parsing dùng JSON mode của strict models 005.1.
+- Resolve DB từ `DATABASE_URL` environment hoặc `.env` theo config convention hiện có; không nhận connection secret qua argv. CLI chỉ load database setting, không phụ thuộc cấu hình LLM. DB phải đã migrate; thiếu/lỗi DB không fallback catalog rỗng.
+- Parse tất cả files trước; có file/schema error thì không đọc DB hoặc trả partial diff. Batch hợp lệ về shape được validate toàn bộ bằng 005.2 và một UTC `as_of` tại lúc bắt đầu command.
+- Snapshot mở rộng có đầy đủ import-owned fields của 5 entity tables, tool join sets, current facts (value + declared verification_status) và evidence history trong **cùng read-only repeatable-read transaction**. Validation-only snapshots có thể thiếu `records`, nhưng diff của existing ID thiếu content/fields phải fail `snapshot_content_incomplete`, không đoán unchanged/updated.
+
+### Semantics và output
+
+- Chỉ preview records xuất hiện trong input. Entity/fact/evidence omitted **không được suy là deletion**; retained facts/history không bị xóa. Archive tool bằng publication_status tường minh, không bỏ UUID khỏi file để delete.
+- Với tool được cung cấp, category_ids/model_ids/capabilities là proposed complete join sets: additions/removals được báo changed field, không tạo deletion action cho taxonomy/model/fact records. 005.4 phải thực hiện replacement của join sets trong transaction. Fact hỗ trợ declared relation vẫn phải có trong tool input và thỏa validator 005.2.
+- Một row cho mỗi provider/model/category/capability/tool/fact/evidence UUID: status `added`, `updated`, `unchanged`; `changed_fields` là field names đã sort, không chứa before/after values. Fact `parent_id` là tool UUID, evidence `parent_id` là fact UUID; entity rows có parent_id null. CLI entity `facts` ứng với DB tool_facts.
+- Tool row so metadata + join sets; fact/evidence changes báo ở rows riêng, không tự đổi tool row thành updated chỉ vì child đổi. Summary đếm **incoming rows**, không đếm toàn catalog hoặc side effects/revisions tương lai. Server-owned timestamps, revisions, fact_revision, search/embedding projections và private curation_notes không thuộc diff.
+- Join sets không phụ thuộc thứ tự; tags và arrays trong fact values giữ thứ tự JSON. UUID/timestamps được serialize canonical UTC; JSON number 8 và 8.0 bằng nhau, true khác 1; dict key order không gây update. Source metadata đã chuẩn hóa theo CuratedEvidence, provenance gate vẫn kiểm owner/current revision/value trước diff.
+- Sort rows theo providers/models/categories/capabilities/tools/facts/evidence, rồi UUID; cùng proposed batch khác thứ tự files cho cùng changes. `as_of` thay đổi giữa commands.
+- JSON stdout có command/status/as_of/summary/changes/errors. Summary có added/updated/unchanged; errors chỉ field/code với document index theo thứ tự argv. Unknown property names bị che thành unknown_key; không echo input values, file contents/paths, URLs, reviewer, excerpt, notes, connection secrets hoặc traceback. Text mặc định có cùng counts/rows/errors.
+- Lỗi bất kỳ khiến changes rỗng và summary bằng 0: đây là **diff không được tạo**, không phải xác nhận catalog unchanged. Caller phải kiểm exit code và status. Argument syntax errors theo argparse: usage + CLI_ARGS_INVALID ở stderr, không JSON stdout hoặc echo raw argument values.
+
+| Exit | Status / ý nghĩa |
+|---|---|
+| 0 | valid: batch hợp lệ, kể cả có added/updated; preview không ghi DB |
+| 2 | invalid: argv/file/JSON/schema/semantic validation hoặc invalid persisted evidence/snapshot content |
+| 3 | unavailable: DATABASE_URL thiếu hoặc target DB không đọc được; CATALOG_UNAVAILABLE |
+| 4 | error: lỗi khác ở CLI/config boundary; INTERNAL_ERROR đã sanitize, không partial success |
+
+Dry-run không bump revisions, sửa joins, invalidate embeddings, reindex hoặc xác minh nội dung source. Role chỉ có SELECT cũng chạy được. 005.4 phải validate lại trong write transaction vì snapshot có thể cũ ngay sau command; output valid không phải write authorization. 005.5/005.6 và import action chưa triển khai.
 

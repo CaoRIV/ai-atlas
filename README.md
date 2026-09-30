@@ -4,7 +4,7 @@
 
 AI Atlas là nền tảng khám phá AI tools và xây dựng AI stack theo mục tiêu, thiết bị và ngân sách của người dùng. Sản phẩm kết nối một thư viện được biên tập với hệ thống đề xuất có căn cứ, giúp trả lời: có công cụ nào, công cụ nào phù hợp và chúng kết hợp thành quy trình như thế nào?
 
-**Trạng thái ngày 30/09/2026:** TASK-001..004 và subtasks 005.1/005.2 đã Done; TASK-005 tổng vẫn In progress. Foundation có Next.js shell song ngữ, FastAPI health/readiness, PostgreSQL + pgvector bằng Compose, Gemini adapter thật và CI không gọi dịch vụ trả phí. Năm migrations bao phủ catalog/facts/evidence/embeddings/users/runs/stacks cùng indexes; ADR-010 Accepted. Catalog API đã có categories/list/detail, keyword search, filters với fresh evidence, pagination và OpenAPI. Curated JSON/Pydantic format có 8 categories/15 capability definitions với UUID cố định; semantic validator kiểm source/time/reference/publication và bảo toàn provenance qua read-only DB snapshot. Full 185 unit tests và 52 DB integration tests pass. CLI importer/seed tools, Stack API, dữ liệu công cụ đã xác minh, authentication flow, recommendation feature và benchmark chưa được triển khai. Các chỉ tiêu sản phẩm vẫn là mục tiêu, chưa phải kết quả đã đo.
+**Trạng thái ngày 30/09/2026:** TASK-001..004 và subtasks 005.1..005.3 đã Done; TASK-005 tổng vẫn In progress. Foundation có Next.js shell song ngữ, FastAPI health/readiness, PostgreSQL + pgvector bằng Compose, Gemini adapter thật và CI không gọi dịch vụ trả phí. Năm migrations bao phủ catalog/facts/evidence/embeddings/users/runs/stacks cùng indexes; ADR-010 Accepted. Catalog API đã có categories/list/detail, keyword search, filters với fresh evidence, pagination và OpenAPI. Curated JSON/Pydantic format có 8 categories/15 capability definitions với UUID cố định; semantic validator kiểm source/time/reference/publication và bảo toàn provenance; CLI dry-run text/JSON so full import-owned content trên read-only DB snapshot. Full 204 unit tests và 68 DB integration tests, Ruff/Mypy và actual CLI smoke pass. Chưa có atomic importer, seed 15 tools hoặc Explorer UI.
 
 ## Vấn đề và người dùng
 
@@ -182,7 +182,7 @@ Kiểm thử TASK-004 trên Windows có cache cũ bị ACL có thể dùng các 
 .venv/Scripts/python.exe -m pytest -p no:cacheprovider apps/api/tests/unit/test_curated_models.py
 ```
 
-TASK-005.1 và 005.2 đã Done; TASK-005 tổng vẫn In progress. Schema parsing 005.1 tách khỏi semantic source/FK/freshness/publication validation 005.2. Chưa có CLI dry-run/upsert hoặc seed 15 tools; vocabulary chưa được import vào DB. Unit/fixtures synthetic tách khỏi curated data. Verification 005.1: 60 schema cases và schema/vocabulary smoke pass; evidence đầy đủ trong backlog. Không gọi Gemini.
+TASK-005.1..005.3 đã Done; TASK-005 tổng vẫn In progress. Schema parsing 005.1 tách khỏi semantic source/FK/freshness/publication validation 005.2 và CLI dry-run/diff 005.3. Chưa có atomic upsert hoặc seed 15 tools; vocabulary chưa được import vào DB. Unit/fixtures synthetic tách khỏi curated data. Verification 005.1: 60 schema cases và schema/vocabulary smoke pass; evidence đầy đủ trong backlog. Không gọi Gemini.
 
 ## Curated semantic validation — TASK-005.2
 
@@ -197,5 +197,39 @@ Kiểm tra taxonomy với catalog rỗng (file validation, không ghi DB/fetch U
 .venv/Scripts/python.exe -m pytest -p no:cacheprovider apps/api/tests/integration/test_curated_snapshot.py
 ```
 
-Validation cho updates vào DB phải cung cấp snapshot DB đích; lỗi đọc DB không được fallback catalog rỗng. Validator không chứng minh nguồn chính thức/truy cập được, không tự fetch hoặc downgrade verified stale. Verification 005.2: 76 semantic unit cases + 6 DB cases; full 185 unit tests và 52 integration tests; Ruff/mypy pass. Smoke dùng taxonomy file thật và DB history tạm đã chặn missing FK, relation false, identity hết hạn, credentials/source reuse; evidence mới cho phép proposal hợp lệ mà stored DB value/revision giữ nguyên. DB smoke tạm đã xóa; không gọi Gemini. TASK-005.1/005.2 Done, TASK-005 tổng In progress; CLI/diff/upsert và seed 15 tools chưa triển khai.
+Validation cho updates vào DB phải cung cấp snapshot DB đích; lỗi đọc DB không được fallback catalog rỗng. Validator không chứng minh nguồn chính thức/truy cập được, không tự fetch hoặc downgrade verified stale. Verification 005.2: 76 semantic unit cases + 6 DB cases; full 185 unit tests và 52 integration tests; Ruff/mypy pass. Smoke dùng taxonomy file thật và DB history tạm đã chặn missing FK, relation false, identity hết hạn, credentials/source reuse; evidence mới cho phép proposal hợp lệ mà stored DB value/revision giữ nguyên. DB smoke tạm đã xóa; không gọi Gemini. TASK-005.1..005.3 Done, TASK-005 tổng In progress; CLI dry-run/diff đã có, atomic upsert và seed 15 tools chưa triển khai.
+
+## Curated CLI dry-run — TASK-005.3
+
+CLI validate cả batch trên snapshot DB đích rồi báo thêm/sửa/không đổi và field names thay đổi, không ghi DB hoặc fetch nguồn. [Diff/exit-code contract](docs/architecture/DATA_MODEL.md#10-curated-dry-run-và-diff--task-0053); source authenticity vẫn do curator xác minh thủ công.
+
+Từ repo root, DB đã migrate; DATABASE_URL có thể lấy từ .env. Ví dụ local Compose đang dùng cổng fallback 55432:
+
+```powershell
+$env:PYTHONPATH = "apps/api/src"
+$env:DATABASE_URL = "postgresql://ai_atlas:ai_atlas_dev@127.0.0.1:55432/ai_atlas"
+.venv/Scripts/python.exe -m ai_atlas_api.curated_cli dry-run data/curated/taxonomy.json
+.venv/Scripts/python.exe -m ai_atlas_api.curated_cli dry-run --format json data/curated/taxonomy.json
+$LASTEXITCODE
+```
+
+Có thể truyền nhiều files sau dry-run/format; references resolve toàn batch, không phụ thuộc thứ tự taxonomy/tools files. Chỉ nhận regular files tối đa 8 MiB/file và 32 MiB/batch; duplicate JSON keys bị từ chối. Không có --database-url hoặc import/write flag.
+
+- Exit **0**: valid, dù có changes; **2**: arguments/input/validation invalid; **3**: DB thiếu/unavailable; **4**: lỗi CLI/config khác, sanitized INTERNAL_ERROR.
+- JSON stdout có status/as_of/summary/changes/errors. Rows tách 5 entity types + facts/evidence, chỉ UUID/parent_id/status/changed_fields, không in raw data/source/credentials. Argument syntax errors ở stderr, không JSON stdout. Có lỗi thì không trả partial diff.
+- Summary chỉ đếm incoming records. Omitted entities/facts/evidence không có deletion action; tool join arrays là proposed complete sets. Tool metadata/joins và child fact/evidence thay đổi được báo riêng. Notes và server-owned revisions/search/embedding fields không thuộc diff.
+
+Chạy riêng regression cases mới với DATABASE_URL của role dev/test có quyền tạo DB/role và apply migrations (fixtures tự xóa DB/SELECT-only role tạm):
+
+```powershell
+$testTemp = Join-Path ".cache" ("pytest-curated-" + [guid]::NewGuid().ToString("N"))
+.venv/Scripts/python.exe -m pytest --basetemp $testTemp -p no:cacheprovider apps/api/tests/unit/test_curated_cli.py apps/api/tests/integration/test_curated_dry_run_db.py
+```
+
+Dùng path --basetemp mới cho mỗi lần chạy vì pytest có thể xóa nội dung path được chỉ định; không trỏ vào thư mục chứa công việc khác.
+
+
+Verification 005.3: **19 unit + 16 DB/CLI cases mới**, full **204 unit + 68 integration tests**, Ruff/format/Mypy pass. CLI taxonomy thật báo 23 added, 0 updated, 0 unchanged trên DB local hiện chưa seed. Smoke riêng chạy SELECT-only role: unchanged re-import, old evidence/new value reject, evidence mới cho phép diff; exit 0/2/3/4 và fingerprint DB (timestamps/revisions/joins/history) giữ nguyên. DB/role/input smoke tạm đã xóa; không gọi Gemini. Windows pytest default temp có ACL deny: verification dùng --basetemp với path mới trong .cache; không xóa cache/user temp có sẵn.
+
+TASK-005.1..005.3 Done; TASK-005 tổng In progress. Tiếp theo **005.4 — atomic upsert/revisions/evidence history/search projection**, phải revalidate trong write transaction. Chưa có import action, seed 15 tools hoặc frontend Explorer.
 

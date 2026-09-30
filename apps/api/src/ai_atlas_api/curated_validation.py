@@ -69,6 +69,8 @@ class CatalogSnapshot:
     tools: Mapping[UUID, ReferenceEntity] = field(default_factory=dict)
     facts: Mapping[UUID, StoredFact] = field(default_factory=dict)
     evidence: Mapping[UUID, StoredEvidence] = field(default_factory=dict)
+    # Import-owned content; validation-only snapshots may omit it, diff must not.
+    records: Mapping[str, Mapping[UUID, Mapping[str, JsonValue]]] = field(default_factory=dict)
 
 
 Entity: TypeAlias = (
@@ -76,18 +78,18 @@ Entity: TypeAlias = (
 )
 
 
-def _same_json(left: JsonValue, right: JsonValue) -> bool:
+def same_json_value(left: JsonValue, right: JsonValue) -> bool:
     if isinstance(left, bool) or isinstance(right, bool):
         return type(left) is type(right) and left == right
     if isinstance(left, (int, float)) and isinstance(right, (int, float)):
         return left == right
     if isinstance(left, dict) and isinstance(right, dict):
         return left.keys() == right.keys() and all(
-            _same_json(value, right[key]) for key, value in left.items()
+            same_json_value(value, right[key]) for key, value in left.items()
         )
     if isinstance(left, list) and isinstance(right, list):
         return len(left) == len(right) and all(
-            _same_json(a, b) for a, b in zip(left, right, strict=True)
+            same_json_value(a, b) for a, b in zip(left, right, strict=True)
         )
     return type(left) is type(right) and left == right
 
@@ -218,7 +220,7 @@ class _CatalogValidation:
             elif (
                 stored_fact is None
                 or stored_source.fact_revision != stored_fact.revision
-                or not _same_json(stored_fact.value, fact.model_dump(mode="json")["value"])
+                or not same_json_value(stored_fact.value, fact.model_dump(mode="json")["value"])
             ):
                 self.error(path + ".id", "evidence_cannot_certify_new_value_or_old_revision")
                 valid = False

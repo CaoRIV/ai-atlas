@@ -69,6 +69,7 @@ Tránh vừa lưu facts trong JSON vừa có cột cache khác có thể mâu th
 | `min_ram_gb` | number hoặc null | Không suy từ size download; source phải mô tả cấu hình phù hợp deployment |
 | `offline_supported` | boolean hoặc null | True phải được tài liệu chứng minh; cloud không đáp ứng offline |
 | `capability:<key>` | boolean hoặc null | `tool_capabilities` chỉ nối tới fact verified true khi publish capability |
+| `model_usage:<model_slug>` | boolean hoặc null | Public model relation chỉ hiển thị với verified true + evidence fresh cùng revision; false là nguồn phủ định quan hệ, null là chưa biết |
 | `integration:<target_key>` | `{target_tool_id: uuid|null, target_name, mechanism, conditions}` | Evidence cùng fact xác minh direction và điều kiện; target có thể là dịch vụ ngoài catalog |
 
 Provider description và official URL phải có evidence fact `identity` chứa name/URL/provider reference. Các liên kết tool-model cần fact `model_usage:<model_slug>`. Tags chỉ hỗ trợ discovery, không là bằng chứng capability.

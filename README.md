@@ -4,7 +4,7 @@
 
 AI Atlas là nền tảng khám phá AI tools và xây dựng AI stack theo mục tiêu, thiết bị và ngân sách của người dùng. Sản phẩm kết nối một thư viện được biên tập với hệ thống đề xuất có căn cứ, giúp trả lời: có công cụ nào, công cụ nào phù hợp và chúng kết hợp thành quy trình như thế nào?
 
-**Trạng thái ngày 29/09/2026:** foundation scaffold đã chạy được: Next.js shell song ngữ, FastAPI health/readiness, PostgreSQL + pgvector bằng Compose, Gemini adapter thật và CI không gọi dịch vụ trả phí. TASK-003 đã Done: năm migrations hiện bao phủ catalog core, typed facts/evidence/capabilities/embeddings, users/private generation runs, stacks/items/edges và full-text/query indexes; clean apply/rollback/reapply, schema constraints, FK index coverage và integration tests đã pass; ADR-010 Accepted. Stack API, dữ liệu công cụ đã xác minh, authentication flow, recommendation feature và benchmark chưa được triển khai. Các chỉ tiêu sản phẩm trong tài liệu vẫn là mục tiêu, chưa phải kết quả đã đo.
+**Trạng thái ngày 30/09/2026:** TASK-001..004 đã Done. Foundation có Next.js shell song ngữ, FastAPI health/readiness, PostgreSQL + pgvector bằng Compose, Gemini adapter thật và CI không gọi dịch vụ trả phí. Năm migrations bao phủ catalog/facts/evidence/embeddings/users/runs/stacks cùng indexes; ADR-010 Accepted. Catalog API đã có categories/list/detail, keyword search, filters với fresh evidence, pagination và OpenAPI; 48 unit tests và 45 DB integration tests pass. Stack API, dữ liệu công cụ đã xác minh, authentication flow, recommendation feature và benchmark chưa được triển khai. Các chỉ tiêu sản phẩm trong tài liệu vẫn là mục tiêu, chưa phải kết quả đã đo.
 
 ## Vấn đề và người dùng
 
@@ -147,4 +147,26 @@ docker compose down --volumes
 
 Không có runtime fake provider. Unit/CI inject SDK client response tại boundary của adapter; workflow CI không đặt `GEMINI_API_KEY` và loại marker `live`. Gemini key, OIDC secrets và session secret chỉ tồn tại ở server environment, không dùng biến `NEXT_PUBLIC_*`.
 
-TASK-002 đã Done ngày 28/09/2026 sau khi clean setup/offline/DB/HTTP checks và billed live smoke đều pass. TASK-003 đã Done ngày 29/09/2026 sau khi hoàn tất migration CLI/catalog core, typed facts/evidence/capabilities, embeddings D=1536, users/generation runs, stack persistence, full-text/query indexes và full migration/integration verification trên PostgreSQL 17/pgvector; ADR-010 Accepted. TASK-004, TASK-005 và TASK-016 hiện không còn bị chặn bởi TASK-003. Không dán key vào chat hoặc commit. Trạng thái và evidence đầy đủ nằm trong [backlog](docs/planning/TASKS.md).
+TASK-002 đã Done ngày 28/09/2026 sau clean setup/offline/DB/HTTP checks và billed live smoke. TASK-003 Done ngày 29/09/2026; TASK-004 Done ngày 30/09/2026 sau catalog contract tests trên DB thật. TASK-005 (curated import + seed) là bước tiếp theo của Discover slice; TASK-016 cũng đủ dependency. Không dán key vào chat hoặc commit. Trạng thái và evidence đầy đủ nằm trong [backlog](docs/planning/TASKS.md).
+
+## Catalog API
+
+Sau khi apply migrations và khởi động API, xem OpenAPI tại `http://127.0.0.1:8000/openapi.json` hoặc Swagger UI tại `http://127.0.0.1:8000/docs`. Public routes:
+
+- `GET /api/v1/categories`
+- `GET /api/v1/tools?q=keyword&category=coding-development&api_available=true&page=1&page_size=20`
+- `GET /api/v1/tools/{tool_id}` (UUID)
+
+Database chưa có curated seed thì list trả rỗng; category slug chưa tồn tại trả 422. TASK-005 sẽ tạo 8 categories và 15 tools có nguồn. Filter true/false chỉ nhận facts verified với evidence cùng revision còn hạn; detail hiển thị stale facts dưới trạng thái unverified. Query key lạ hoặc parameter lặp trả 422, draft/archived detail trả 404, DB chưa sẵn sàng trả 503. Chi tiết response và filters ở [API contract](docs/architecture/API_DESIGN.md).
+
+Review fixes TASK-004: model relation chỉ hiển thị khi model-use fact verified fresh và value true; fact verified false vẫn giữ nguồn nhưng không công bố model. HTTP error envelope giữ exception headers, gồm `Allow: GET` cho 405, cùng request ID. Hai regression cases, 49 unit tests, 46 integration tests và smoke HTTP thật đã pass; evidence trong backlog. TASK-005 chưa bắt đầu.
+
+Kiểm thử TASK-004 trên Windows có cache cũ bị ACL có thể dùng các lệnh đã chạy sau (DATABASE_URL trỏ DB local; tests tạo rồi xóa database tạm, không seed vào database chính):
+
+```powershell
+.venv/Scripts/python.exe -m ruff check --no-cache apps/api
+.venv/Scripts/python.exe -m ruff format --check --no-cache apps/api
+.venv/Scripts/python.exe -m mypy --cache-dir .cache/mypy-task004
+.venv/Scripts/python.exe -m pytest -p no:cacheprovider -m "not integration and not live"
+.venv/Scripts/python.exe -m pytest -p no:cacheprovider -m integration
+```

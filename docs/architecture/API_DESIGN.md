@@ -1,6 +1,6 @@
 # REST API design
 
-Thiết kế `/api/v1`, chưa có API chạy thật. Nguồn entities: [Data model](DATA_MODEL.md); recommendation result: [AI spec](AI_RECOMMENDATION.md). Contract này là baseline cho OpenAPI khi TASK-004/TASK-010 triển khai.
+Contract `/api/v1`. Catalog routes đã triển khai trong TASK-004 ngày 30/09/2026; generation/auth/stack routes còn theo backlog. Nguồn entities: [Data model](DATA_MODEL.md); recommendation result: [AI spec](AI_RECOMMENDATION.md). FastAPI xuất OpenAPI tại `/openapi.json`, Swagger UI tại `/docs` cho các routes đã có.
 
 ## 1. Quy ước chung
 
@@ -9,8 +9,9 @@ Thiết kế `/api/v1`, chưa có API chạy thật. Nguồn entities: [Data mod
 - Object response: `{"data": {...}, "request_id": "UUID"}`. List response: `{"data": [], "pagination": {"page": 1, "page_size": 20, "total": 0}, "request_id": "UUID"}`. Generation dùng envelope riêng như AI spec. `DELETE` 204 không body.
 - Pagination `page >= 1`, `page_size=20` mặc định, tối đa 100; offset pagination đủ cho catalog nhỏ. Stable sort có UUID tie-break. Page vượt total trả data rỗng, không 404.
 - Text input trim/Unicode normalize; unknown body/query keys bị từ chối 422 để tránh hiểu nhầm filter đã áp dụng. Không nhận SQL/order expression tùy ý.
+- Catalog query dùng Unicode NFC sau trim; scalar query parameters không được lặp lại (422). Categories/detail không nhận query parameters. Boolean query chỉ nhận literal `true`/`false` sau trim.
 - Auth là Bearer access token do identity provider đã cấu hình cấp. Browser authenticated gọi qua Next.js BFF dùng cookie/CSRF; FastAPI vẫn kiểm token. Public catalog không bắt buộc auth.
-- Request ID do server tạo/chuẩn hóa và trả trong header `X-Request-ID` cùng body. Tất cả lỗi theo envelope bên dưới; 401 có challenge phù hợp; 429 có `Retry-After`.
+- Request ID do server tạo/chuẩn hóa và trả trong header `X-Request-ID` cùng body. Tất cả lỗi theo envelope bên dưới; error handler giữ headers của HTTPException, gồm `Allow` cho 405, challenge phù hợp cho 401 và `Retry-After` cho 429, đồng thời giữ request ID của request.
 
 ```json
 {
@@ -30,14 +31,14 @@ Common errors: 401 invalid/expired token; 403 account disabled; 404 resource abs
 | Method/path | Auth | Request | Response và errors |
 |---|---|---|---|
 | `GET /api/v1/categories` | Không | Không có params | 200 list không pagination: `data:[{id,slug,name}]` |
-| `GET /api/v1/tools` | Không | Query theo bảng dưới | 200 paginated ToolSummary; 422 filter sai |
+| `GET /api/v1/tools` | Không | Query theo bảng dưới | 200 paginated ToolSummary; 422 filter sai; 503 `CATALOG_UNAVAILABLE` khi DB chưa cấu hình/lỗi/timeout |
 | `GET /api/v1/tools/{tool_id}` | Không | UUID | 200 ToolDetail; 404 nếu draft/archived/không có; 422 UUID sai |
 | `GET /api/v1/me` | Có | Không body | 200 `data:{id,display_name}`; 401 nếu chưa login |
 
 | Filter tools | Kiểu/mặc định | Ngữ nghĩa |
 |---|---|---|
 | `q` | string 0–200 chars | Keyword name/description/tags; rỗng như omitted; Explorer không gọi LLM |
-| `category` | comma-separated slugs, tối đa 8 | OR trong nhóm; slug không tồn tại → 422 |
+| `category` | comma-separated slugs, tối đa 8, chuỗi tối đa 512 chars | OR trong nhóm; slug lowercase letters/digits, phân cách bằng hyphen; rỗng hoặc slug không tồn tại → 422 |
 | `platform` | enum web/windows/macos/linux/ios/android | Chỉ records có fact verified fresh chứa platform |
 | `pricing_model` | enum free/freemium/paid/usage_based/contact/unknown | Unknown bao gồm fact null/unverified/stale; không ám chỉ tổng cost |
 | `api_available` | boolean | true/false chỉ match fact có evidence fresh tương ứng, không match null |
@@ -48,6 +49,12 @@ Common errors: 401 invalid/expired token; 403 account disabled; 404 resource abs
 Giữa các nhóm filter dùng AND. Public catalog filter khác generation hard evaluator: platform web không tự đổi thành Windows; Builder xử lý execution context riêng. No results không phải server error.
 
 ToolSummary gồm `id, slug, name, description, categories:[{id,slug,name}], pricing:{model,verification_status}, last_verified_at`. ToolDetail thêm `official_url`, `provider:{id,name}|null`, `tags`, `models:[{id,name}]`, `capabilities:[{key,name,evidence_ids}]`, `facts:[{key,value,verification_status,evidence_ids}]`, `evidence:[{id,fact_key,source_url,checked_at,expires_at}]`, `revision`, `warnings`. Stale facts vẫn hiển thị value với warning/verification_status unverified; không trình bày như confirmed. Không trả checked_by nội bộ hoặc unpublished notes.
+
+Projection TASK-004: `verification_status` trả về là trạng thái hiệu lực tại thời điểm transaction; null/unknown giữ `unknown`, fact verified thiếu evidence đúng revision/còn hạn chuyển `unverified`. Pricing summary dùng `model=unknown` khi không xác minh được model; giá trị pricing gốc vẫn có trong detail facts. `facts.evidence_ids` chỉ chứa evidence fresh của fact hiệu lực verified; `evidence` liệt kê sources thuộc revision hiện tại, có thể gồm sources hết hạn để UI hiển thị ngày cần kiểm chứng lại. Evidence revision cũ không được trả như nguồn của value mới. Capabilities chỉ hiển thị khi fact `capability:<key>` verified true; models chỉ hiển thị khi fact `model_usage:<slug>` verified fresh. Warnings là array mã `fact_unverified:<key>` hoặc `fact_unknown:<key>` để UI en/vi ánh xạ nhãn.
+
+Fact `model_usage:<slug>` có value boolean hoặc null. Projection `models` chỉ công bố quan hệ khi fact verified fresh **và value true**; value false/null không xuất hiện trong `models` dù relation `tool_models` còn tồn tại. Verified false vẫn trả fact và evidence để minh bạch nguồn phủ định.
+
+Keyword dùng `plainto_tsquery('simple', q)` trên weighted search projection cùng exact name/slug không phân biệt hoa/thường; relevance ưu tiên exact match, sau đó `ts_rank_cd` giảm dần và UUID tăng dần. Name sort theo `lower(name)` tăng dần, updated theo `updated_at` giảm dần, đều tie-break UUID. Importer ở TASK-005 phải dựng projection từ metadata/labels trong cùng transaction; API đọc không tự reindex. Categories và pricing của page được batch load; total/page/freshness cùng read-only repeatable-read snapshot. Connect timeout 3s, mỗi SQL statement timeout 5s; không gọi LLM hoặc fetch source URL. Cả ba catalog routes trả 503 `CATALOG_UNAVAILABLE` khi DB chưa sẵn sàng.
 
 Categories seed gồm Chatting & Assistants, Coding & Development, Image Generation & Editing, Video Generation & Editing, Audio & Speech, Research & Learning, Productivity & Automation, AI Agents. Slugs tương ứng `chatting-assistants`, `coding-development`, `image-generation-editing`, `video-generation-editing`, `audio-speech`, `research-learning`, `productivity-automation`, `ai-agents`.
 

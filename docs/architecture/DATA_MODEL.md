@@ -231,7 +231,7 @@ Implementation dùng [curated_cli.py](../../apps/api/src/ai_atlas_api/curated_cl
 | 3 | unavailable: DATABASE_URL thiếu hoặc target DB không đọc được; CATALOG_UNAVAILABLE |
 | 4 | error: lỗi khác ở CLI/config boundary; INTERNAL_ERROR đã sanitize, không partial success |
 
-Dry-run không bump revisions, sửa joins, invalidate embeddings, reindex hoặc xác minh nội dung source. Role chỉ có SELECT cũng chạy được. Atomic import đã triển khai ở 005.4, nhưng dry-run output vẫn không phải write authorization. 005.5/005.6 chưa triển khai.
+Dry-run không bump revisions, sửa joins, invalidate embeddings, reindex hoặc xác minh nội dung source. Role chỉ có SELECT cũng chạy được. Atomic import đã triển khai ở 005.4, nhưng dry-run output vẫn không phải write authorization. Seed ở mục 12; commands và verification toàn pipeline trong [operating guide](../operations/CURATED_CATALOG.md).
 
 ## 11. Atomic curated import — TASK-005.4
 

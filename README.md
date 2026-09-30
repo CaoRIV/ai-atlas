@@ -4,7 +4,7 @@
 
 AI Atlas là nền tảng khám phá AI tools và xây dựng AI stack theo mục tiêu, thiết bị và ngân sách của người dùng. Sản phẩm kết nối một thư viện được biên tập với hệ thống đề xuất có căn cứ, giúp trả lời: có công cụ nào, công cụ nào phù hợp và chúng kết hợp thành quy trình như thế nào?
 
-**Trạng thái ngày 30/09/2026:** TASK-001..004 và subtask 005.1 đã Done; TASK-005 tổng vẫn In progress. Foundation có Next.js shell song ngữ, FastAPI health/readiness, PostgreSQL + pgvector bằng Compose, Gemini adapter thật và CI không gọi dịch vụ trả phí. Năm migrations bao phủ catalog/facts/evidence/embeddings/users/runs/stacks cùng indexes; ADR-010 Accepted. Catalog API đã có categories/list/detail, keyword search, filters với fresh evidence, pagination và OpenAPI. Curated JSON/Pydantic format đã có 8 categories và 15 capability definitions với UUID cố định; full 109 unit tests và 46 DB integration tests pass. Importer/seed tools, Stack API, dữ liệu công cụ đã xác minh, authentication flow, recommendation feature và benchmark chưa được triển khai. Các chỉ tiêu sản phẩm trong tài liệu vẫn là mục tiêu, chưa phải kết quả đã đo.
+**Trạng thái ngày 30/09/2026:** TASK-001..004 và subtasks 005.1/005.2 đã Done; TASK-005 tổng vẫn In progress. Foundation có Next.js shell song ngữ, FastAPI health/readiness, PostgreSQL + pgvector bằng Compose, Gemini adapter thật và CI không gọi dịch vụ trả phí. Năm migrations bao phủ catalog/facts/evidence/embeddings/users/runs/stacks cùng indexes; ADR-010 Accepted. Catalog API đã có categories/list/detail, keyword search, filters với fresh evidence, pagination và OpenAPI. Curated JSON/Pydantic format có 8 categories/15 capability definitions với UUID cố định; semantic validator kiểm source/time/reference/publication và bảo toàn provenance qua read-only DB snapshot. Full 185 unit tests và 52 DB integration tests pass. CLI importer/seed tools, Stack API, dữ liệu công cụ đã xác minh, authentication flow, recommendation feature và benchmark chưa được triển khai. Các chỉ tiêu sản phẩm vẫn là mục tiêu, chưa phải kết quả đã đo.
 
 ## Vấn đề và người dùng
 
@@ -182,5 +182,20 @@ Kiểm thử TASK-004 trên Windows có cache cũ bị ACL có thể dùng các 
 .venv/Scripts/python.exe -m pytest -p no:cacheprovider apps/api/tests/unit/test_curated_models.py
 ```
 
-TASK-005.1 đã Done; TASK-005 tổng vẫn In progress. Schema parsing không thay source/FK/freshness/publication validation của 005.2. Chưa có CLI dry-run/upsert hoặc seed 15 tools; vocabulary chưa được import vào DB. Unit/fixtures synthetic tách khỏi curated data. Verification 005.1: 60 schema cases, full 109 unit tests, 46 integration tests, Ruff/mypy và schema/vocabulary smoke pass; không gọi Gemini.
+TASK-005.1 và 005.2 đã Done; TASK-005 tổng vẫn In progress. Schema parsing 005.1 tách khỏi semantic source/FK/freshness/publication validation 005.2. Chưa có CLI dry-run/upsert hoặc seed 15 tools; vocabulary chưa được import vào DB. Unit/fixtures synthetic tách khỏi curated data. Verification 005.1: 60 schema cases và schema/vocabulary smoke pass; evidence đầy đủ trong backlog. Không gọi Gemini.
+
+## Curated semantic validation — TASK-005.2
+
+`apps/api/src/ai_atlas_api/curated_validation.py` kiểm tra whole-batch references/uniqueness, source syntax, TTL/time bounds, publication/identity và capability/model relations. `curated_snapshot.py` đọc DB ở chế độ read-only để bảo toàn fact/evidence ownership và chặn nguồn cũ chứng minh value/revision mới. Chi tiết [validation contract](docs/architecture/DATA_MODEL.md#9-semantic-import-validation--task-0052).
+
+Kiểm tra taxonomy với catalog rỗng (file validation, không ghi DB/fetch URL):
+
+```powershell
+.venv/Scripts/python.exe -X utf8 -c "import sys; from pathlib import Path; from datetime import UTC, datetime; sys.path.insert(0, 'apps/api/src'); from ai_atlas_api.curated_models import CuratedCatalog; from ai_atlas_api.curated_validation import validate_catalog; catalog = CuratedCatalog.model_validate_json(Path('data/curated/taxonomy.json').read_bytes()); validate_catalog([catalog], now=datetime.now(UTC)); print('semantic taxonomy validation passed')"
+.venv/Scripts/python.exe -m pytest -p no:cacheprovider apps/api/tests/unit/test_curated_validation.py
+# DATABASE_URL theo DB local; integration tạo/xóa DB tạm, không ghi vào catalog chính.
+.venv/Scripts/python.exe -m pytest -p no:cacheprovider apps/api/tests/integration/test_curated_snapshot.py
+```
+
+Validation cho updates vào DB phải cung cấp snapshot DB đích; lỗi đọc DB không được fallback catalog rỗng. Validator không chứng minh nguồn chính thức/truy cập được, không tự fetch hoặc downgrade verified stale. Verification 005.2: 76 semantic unit cases + 6 DB cases; full 185 unit tests và 52 integration tests; Ruff/mypy pass. Smoke dùng taxonomy file thật và DB history tạm đã chặn missing FK, relation false, identity hết hạn, credentials/source reuse; evidence mới cho phép proposal hợp lệ mà stored DB value/revision giữ nguyên. DB smoke tạm đã xóa; không gọi Gemini. TASK-005.1/005.2 Done, TASK-005 tổng In progress; CLI/diff/upsert và seed 15 tools chưa triển khai.
 

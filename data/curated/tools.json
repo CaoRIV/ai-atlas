@@ -1,0 +1,1669 @@
+{
+  "schema_version": 1,
+  "providers": [
+    {
+      "id": "074983b3-c201-5b6c-90ec-9876de4e8b48",
+      "slug": "openai",
+      "name": "OpenAI",
+      "website_url": "https://openai.com/"
+    },
+    {
+      "id": "1be6240c-56f0-5296-9a02-bec60b3df93e",
+      "slug": "anthropic",
+      "name": "Anthropic",
+      "website_url": "https://www.anthropic.com/"
+    },
+    {
+      "id": "9be4c831-3994-5050-969a-a1242b36045c",
+      "slug": "google",
+      "name": "Google",
+      "website_url": "https://about.google/"
+    },
+    {
+      "id": "82e48828-efdc-5f8d-a8ae-b886a8b95cd8",
+      "slug": "github",
+      "name": "GitHub",
+      "website_url": "https://github.com/"
+    },
+    {
+      "id": "2862ee17-49dd-5e88-9fc3-47d503817201",
+      "slug": "anysphere",
+      "name": "Anysphere",
+      "website_url": "https://www.cursor.com/"
+    },
+    {
+      "id": "7becff37-6441-51b5-8d91-14927b8a4156",
+      "slug": "midjourney",
+      "name": "Midjourney",
+      "website_url": "https://www.midjourney.com/"
+    },
+    {
+      "id": "f759499a-f9b7-541b-8d8a-c3117942b436",
+      "slug": "adobe",
+      "name": "Adobe",
+      "website_url": "https://www.adobe.com/"
+    },
+    {
+      "id": "3867af2a-bbab-59c5-b969-80a9ec2d3cf8",
+      "slug": "runway",
+      "name": "Runway",
+      "website_url": "https://runwayml.com/"
+    },
+    {
+      "id": "eedcd2d3-156e-5eb4-9d62-06e0997ee007",
+      "slug": "elevenlabs",
+      "name": "ElevenLabs",
+      "website_url": "https://elevenlabs.io/"
+    },
+    {
+      "id": "128a9704-14ef-5c7b-ac54-99f482973a00",
+      "slug": "otter",
+      "name": "Otter.ai",
+      "website_url": "https://otter.ai/"
+    },
+    {
+      "id": "d508a5ce-e84e-57c6-8c47-2332da22adc2",
+      "slug": "perplexity",
+      "name": "Perplexity AI",
+      "website_url": "https://www.perplexity.ai/"
+    },
+    {
+      "id": "d3e011fa-5c43-50ad-9545-76de4c96ef88",
+      "slug": "zapier",
+      "name": "Zapier",
+      "website_url": "https://zapier.com/"
+    },
+    {
+      "id": "6ae96203-597c-557b-8ba0-f4adecbcfe90",
+      "slug": "n8n",
+      "name": "n8n",
+      "website_url": "https://n8n.io/"
+    },
+    {
+      "id": "c32dc398-3922-5296-aba0-7351a0540dcd",
+      "slug": "langflow",
+      "name": "Langflow",
+      "website_url": "https://www.langflow.org/"
+    }
+  ],
+  "models": [],
+  "categories": [],
+  "capabilities": [],
+  "tools": [
+    {
+      "id": "f834b059-14a7-54b3-9262-5ed5c5d65f67",
+      "slug": "chatgpt",
+      "name": "ChatGPT",
+      "description": "AI assistant for drafting, editing, and working with text through conversation.",
+      "official_url": "https://chatgpt.com/",
+      "provider_id": "074983b3-c201-5b6c-90ec-9876de4e8b48",
+      "tags": [
+        "assistant",
+        "writing"
+      ],
+      "publication_status": "published",
+      "last_verified_at": "2026-09-30T15:00:00Z",
+      "category_ids": [
+        "93b30de7-0716-4a5f-9826-32a6aa108f67"
+      ],
+      "model_ids": [],
+      "capabilities": [
+        {
+          "capability_id": "c940fc47-e420-40c2-bfcc-fc876ce2f98e",
+          "fact_id": "bacf1b23-d849-5e53-bf07-60425d9515c6"
+        }
+      ],
+      "facts": [
+        {
+          "id": "73806c25-f284-547c-b3fd-4d94a6cd7191",
+          "key": "identity",
+          "value": {
+            "name": "ChatGPT",
+            "description": "AI assistant for drafting, editing, and working with text through conversation.",
+            "official_url": "https://chatgpt.com/",
+            "provider_id": "074983b3-c201-5b6c-90ec-9876de4e8b48"
+          },
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "16c47a98-a704-5356-8c9e-b8e333443476",
+              "source_url": "https://help.openai.com/en/articles/6783457-what-is-chatgpt",
+              "source_kind": "official_docs",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "bacf1b23-d849-5e53-bf07-60425d9515c6",
+          "key": "capability:text_generation",
+          "value": true,
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "707f7ba0-2907-5a97-ad89-2d67feb51c64",
+              "source_url": "https://help.openai.com/en/articles/6783457-what-is-chatgpt",
+              "source_kind": "official_docs",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "d4ac2f2f-fc73-55e9-b1be-4059214954f4",
+          "key": "pricing",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "18ceed3d-4720-5e61-9a36-d3d1a816168a",
+          "key": "platforms",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "8ba24a01-eef3-5d06-b4d1-09219429a7d8",
+          "key": "api_available",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "718ef135-ef82-5993-bffc-b3929741ac07",
+          "key": "open_source",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "1dc109b8-4e59-51f1-9d48-a90f98ecc7d2",
+          "key": "deployment_modes",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "36f7b313-bde2-5885-bd4c-6bd6b83053e3",
+          "key": "offline_supported",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "id": "e32477de-e8d9-5719-8b2f-34d7d29b1d02",
+      "slug": "claude",
+      "name": "Claude",
+      "description": "AI assistant for writing, editing, summarization, learning, and other conversational tasks.",
+      "official_url": "https://claude.ai/",
+      "provider_id": "1be6240c-56f0-5296-9a02-bec60b3df93e",
+      "tags": [
+        "assistant",
+        "writing"
+      ],
+      "publication_status": "published",
+      "last_verified_at": "2026-09-30T15:00:00Z",
+      "category_ids": [
+        "93b30de7-0716-4a5f-9826-32a6aa108f67"
+      ],
+      "model_ids": [],
+      "capabilities": [
+        {
+          "capability_id": "c940fc47-e420-40c2-bfcc-fc876ce2f98e",
+          "fact_id": "0a041b56-7075-5d4a-983b-a97d71158f90"
+        }
+      ],
+      "facts": [
+        {
+          "id": "117e9a2b-ecf2-5b55-980b-2602127362cf",
+          "key": "identity",
+          "value": {
+            "name": "Claude",
+            "description": "AI assistant for writing, editing, summarization, learning, and other conversational tasks.",
+            "official_url": "https://claude.ai/",
+            "provider_id": "1be6240c-56f0-5296-9a02-bec60b3df93e"
+          },
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "b1a872bf-233e-5161-8197-0b8e4b6c1d3d",
+              "source_url": "https://support.anthropic.com/en/articles/7996845-what-are-some-things-i-can-use-claude-for",
+              "source_kind": "official_docs",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "0a041b56-7075-5d4a-983b-a97d71158f90",
+          "key": "capability:text_generation",
+          "value": true,
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "9b59fc5d-e417-540e-98b5-72715108a409",
+              "source_url": "https://support.anthropic.com/en/articles/7996845-what-are-some-things-i-can-use-claude-for",
+              "source_kind": "official_docs",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "1c8a2717-ad3e-5a00-b25a-1814a0dc6486",
+          "key": "pricing",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "2d50a6c9-8cac-57ba-9ba7-8b2d47dc0db5",
+          "key": "platforms",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "5376a1b7-6863-5017-b54f-860d9df4fbcb",
+          "key": "api_available",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "0aa8060c-9d08-5d61-a620-e002f71ae3ae",
+          "key": "open_source",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "bc71a46d-2a1d-559f-937c-0dbe7dda1516",
+          "key": "deployment_modes",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "51cdb2e7-55e6-5379-9099-3e78c59931a0",
+          "key": "offline_supported",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "id": "766a00c5-4648-5991-a06a-d2dfd40a79ba",
+      "slug": "gemini",
+      "name": "Gemini",
+      "description": "Google AI assistant for everyday tasks across work, school, and home.",
+      "official_url": "https://gemini.google.com/",
+      "provider_id": "9be4c831-3994-5050-969a-a1242b36045c",
+      "tags": [
+        "assistant",
+        "writing"
+      ],
+      "publication_status": "published",
+      "last_verified_at": "2026-09-30T15:00:00Z",
+      "category_ids": [
+        "93b30de7-0716-4a5f-9826-32a6aa108f67"
+      ],
+      "model_ids": [],
+      "capabilities": [
+        {
+          "capability_id": "c940fc47-e420-40c2-bfcc-fc876ce2f98e",
+          "fact_id": "9b000031-9e59-5ed2-8dcb-fe0dc2b7527d"
+        }
+      ],
+      "facts": [
+        {
+          "id": "342a1229-83d0-5e56-bad9-dcb842f6b997",
+          "key": "identity",
+          "value": {
+            "name": "Gemini",
+            "description": "Google AI assistant for everyday tasks across work, school, and home.",
+            "official_url": "https://gemini.google.com/",
+            "provider_id": "9be4c831-3994-5050-969a-a1242b36045c"
+          },
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "5d036f40-d5c4-5359-8c29-1d2ff062022b",
+              "source_url": "https://gemini.google/about/",
+              "source_kind": "official_site",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "9b000031-9e59-5ed2-8dcb-fe0dc2b7527d",
+          "key": "capability:text_generation",
+          "value": true,
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "69db017a-d500-5a93-a0ae-17d2ec87f513",
+              "source_url": "https://gemini.google/about/",
+              "source_kind": "official_site",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "6724a1a1-4ca1-5de6-88e1-bc92c79c1ef2",
+          "key": "pricing",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "67c8cac8-2b2b-5977-ab2e-2f02c1e80953",
+          "key": "platforms",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "3615b77c-2f0f-5225-abad-a48b8de9b927",
+          "key": "api_available",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "296ba13a-efd2-5eab-9985-a9b11d5ae133",
+          "key": "open_source",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "72fd614f-33e5-5825-9868-0dfade9a574e",
+          "key": "deployment_modes",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "5d19c03d-f055-5fac-91f5-da221335a807",
+          "key": "offline_supported",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "id": "12be8741-68ca-5b87-83e6-e9da18c5d5b7",
+      "slug": "github-copilot",
+      "name": "GitHub Copilot",
+      "description": "AI coding assistant that provides contextual help across the software development lifecycle.",
+      "official_url": "https://github.com/features/copilot",
+      "provider_id": "82e48828-efdc-5f8d-a8ae-b886a8b95cd8",
+      "tags": [
+        "coding",
+        "developer"
+      ],
+      "publication_status": "published",
+      "last_verified_at": "2026-09-30T15:00:00Z",
+      "category_ids": [
+        "62e9d215-4f81-43dd-ae24-d8d405b54ca7"
+      ],
+      "model_ids": [],
+      "capabilities": [
+        {
+          "capability_id": "5c544515-726c-40a3-9095-2bb451f7e18a",
+          "fact_id": "5bbe79cd-77d0-5269-b7b2-02095c4e3674"
+        }
+      ],
+      "facts": [
+        {
+          "id": "5098a4f1-7a75-5488-aa7c-26570304bb30",
+          "key": "identity",
+          "value": {
+            "name": "GitHub Copilot",
+            "description": "AI coding assistant that provides contextual help across the software development lifecycle.",
+            "official_url": "https://github.com/features/copilot",
+            "provider_id": "82e48828-efdc-5f8d-a8ae-b886a8b95cd8"
+          },
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "b45a6a3f-ee8d-5d3f-99e4-c50d34a9a98b",
+              "source_url": "https://github.com/features/copilot",
+              "source_kind": "official_site",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "5bbe79cd-77d0-5269-b7b2-02095c4e3674",
+          "key": "capability:code_generation",
+          "value": true,
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "e26475fc-ee69-5a00-89a7-ace85eae5d64",
+              "source_url": "https://github.com/features/copilot",
+              "source_kind": "official_site",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "511f7cf8-5152-52a0-95ff-9cd5db4a015e",
+          "key": "pricing",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "b26ef4fe-9495-5ace-a2f9-6cd2a00913d7",
+          "key": "platforms",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "94c4d4aa-2a94-5a74-8107-b4fbd66c6447",
+          "key": "api_available",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "6d8f9110-6541-5714-993f-813e683914f8",
+          "key": "open_source",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "524d8e2a-88fb-56c1-828d-f941a3ef4b22",
+          "key": "deployment_modes",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "a9ca90b8-b56e-5c06-907d-a0ea894d1de1",
+          "key": "offline_supported",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "id": "c239a088-269b-5d63-8af6-bcd504630448",
+      "slug": "cursor",
+      "name": "Cursor",
+      "description": "AI coding tool with agents that can build, test, and review software tasks.",
+      "official_url": "https://www.cursor.com/",
+      "provider_id": "2862ee17-49dd-5e88-9fc3-47d503817201",
+      "tags": [
+        "coding",
+        "developer"
+      ],
+      "publication_status": "published",
+      "last_verified_at": "2026-09-30T15:00:00Z",
+      "category_ids": [
+        "62e9d215-4f81-43dd-ae24-d8d405b54ca7"
+      ],
+      "model_ids": [],
+      "capabilities": [
+        {
+          "capability_id": "5c544515-726c-40a3-9095-2bb451f7e18a",
+          "fact_id": "2d19e5fd-84a1-53a9-ba45-dc3e1ac73feb"
+        }
+      ],
+      "facts": [
+        {
+          "id": "2323bd83-3f23-5495-b6e8-bb0367230e3b",
+          "key": "identity",
+          "value": {
+            "name": "Cursor",
+            "description": "AI coding tool with agents that can build, test, and review software tasks.",
+            "official_url": "https://www.cursor.com/",
+            "provider_id": "2862ee17-49dd-5e88-9fc3-47d503817201"
+          },
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "d9d78a63-261c-5a26-8e15-88ffd111d184",
+              "source_url": "https://cursor.com/en-US",
+              "source_kind": "official_site",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "2d19e5fd-84a1-53a9-ba45-dc3e1ac73feb",
+          "key": "capability:code_generation",
+          "value": true,
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "f9510471-08e0-5bb8-b7a2-4310fe1aa39d",
+              "source_url": "https://cursor.com/en-US",
+              "source_kind": "official_site",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "1c28ae3e-aa73-5ce9-bf71-af5d78e3a9a3",
+          "key": "pricing",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "4ff4adbe-a0f6-5bc3-986e-031da05b8770",
+          "key": "platforms",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "0a5c2722-b568-56e7-9298-8c5573c32fa9",
+          "key": "api_available",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "195df9f7-b424-5d61-bdd9-4dbfe53ae6ed",
+          "key": "open_source",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "1d47acb6-363a-5369-9534-4225f2b456fc",
+          "key": "deployment_modes",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "28844352-8e05-5a65-b2bb-aa00453dba0a",
+          "key": "offline_supported",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "id": "d07897d7-28bc-5c41-9f1d-5cb49a3e7fbc",
+      "slug": "midjourney",
+      "name": "Midjourney",
+      "description": "Creative tool that turns text prompts into generated images.",
+      "official_url": "https://www.midjourney.com/",
+      "provider_id": "7becff37-6441-51b5-8d91-14927b8a4156",
+      "tags": [
+        "images",
+        "creative"
+      ],
+      "publication_status": "published",
+      "last_verified_at": "2026-09-30T15:00:00Z",
+      "category_ids": [
+        "6c0d8b33-21a5-4840-b0c5-48e7b93fe606"
+      ],
+      "model_ids": [],
+      "capabilities": [
+        {
+          "capability_id": "be00a5bf-a783-4d55-91c2-6c1745688765",
+          "fact_id": "524a0554-b43e-5920-b0df-74ab720003ac"
+        }
+      ],
+      "facts": [
+        {
+          "id": "8789936a-80b8-5209-84b4-17af2f1e6316",
+          "key": "identity",
+          "value": {
+            "name": "Midjourney",
+            "description": "Creative tool that turns text prompts into generated images.",
+            "official_url": "https://www.midjourney.com/",
+            "provider_id": "7becff37-6441-51b5-8d91-14927b8a4156"
+          },
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "aa45e7d1-09af-5ede-81da-d52dec4779ec",
+              "source_url": "https://docs.midjourney.com/hc/en-us/articles/33329261836941-Getting-Started-Guide",
+              "source_kind": "official_docs",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "524a0554-b43e-5920-b0df-74ab720003ac",
+          "key": "capability:image_generation",
+          "value": true,
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "4d6c3441-8e86-591f-be9a-fef0e4a91700",
+              "source_url": "https://docs.midjourney.com/hc/en-us/articles/33329261836941-Getting-Started-Guide",
+              "source_kind": "official_docs",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "6db2dc51-d78e-50b4-bd0c-0f6c11543c41",
+          "key": "pricing",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "9645d837-8668-5946-8897-d5af594182ab",
+          "key": "platforms",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "f98471ad-99f2-5116-8e84-79e8c65a154d",
+          "key": "api_available",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "f669d463-a7e7-5478-84d4-c77675d43271",
+          "key": "open_source",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "35ca227c-7644-584c-9399-35d2098ab2b2",
+          "key": "deployment_modes",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "f0ec71ae-f125-5f18-b24a-434d3aa3c8b4",
+          "key": "offline_supported",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "id": "31819d03-55a1-57d6-841c-cbc9dbaa336c",
+      "slug": "adobe-firefly",
+      "name": "Adobe Firefly",
+      "description": "Adobe creative application for generating images from text prompts.",
+      "official_url": "https://firefly.adobe.com/",
+      "provider_id": "f759499a-f9b7-541b-8d8a-c3117942b436",
+      "tags": [
+        "images",
+        "design"
+      ],
+      "publication_status": "published",
+      "last_verified_at": "2026-09-30T15:00:00Z",
+      "category_ids": [
+        "6c0d8b33-21a5-4840-b0c5-48e7b93fe606"
+      ],
+      "model_ids": [],
+      "capabilities": [
+        {
+          "capability_id": "be00a5bf-a783-4d55-91c2-6c1745688765",
+          "fact_id": "dbf3cfe0-d9f8-5629-ba9b-999e8e09687d"
+        }
+      ],
+      "facts": [
+        {
+          "id": "732caa2e-918d-54cc-b02b-0b45957c60fb",
+          "key": "identity",
+          "value": {
+            "name": "Adobe Firefly",
+            "description": "Adobe creative application for generating images from text prompts.",
+            "official_url": "https://firefly.adobe.com/",
+            "provider_id": "f759499a-f9b7-541b-8d8a-c3117942b436"
+          },
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "34aca37c-f6ac-5dc6-a87c-baaa42735c05",
+              "source_url": "https://www.adobe.com/products/firefly/features/text-to-image.html",
+              "source_kind": "official_site",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "dbf3cfe0-d9f8-5629-ba9b-999e8e09687d",
+          "key": "capability:image_generation",
+          "value": true,
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "d5bc88b2-60fb-54cc-9ed3-1c0f295d9a12",
+              "source_url": "https://www.adobe.com/products/firefly/features/text-to-image.html",
+              "source_kind": "official_site",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "25e9008f-65a5-5c1d-911c-dca92cd28c20",
+          "key": "pricing",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "cc6fc90e-dd34-527d-a8b5-8a9414bab9cf",
+          "key": "platforms",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "f11576b3-6859-5409-bbff-61ba83524185",
+          "key": "api_available",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "c98b002e-9e27-5551-a4ba-4c30ba63f657",
+          "key": "open_source",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "a00ef794-49ff-578f-a58d-70145ec83d23",
+          "key": "deployment_modes",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "343b56d1-5fda-57d2-950e-f68d373e7171",
+          "key": "offline_supported",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "id": "5bf2f6ac-4238-5479-821f-92a489c041cf",
+      "slug": "runway",
+      "name": "Runway",
+      "description": "Creative AI platform with text-to-video generation tools.",
+      "official_url": "https://runwayml.com/",
+      "provider_id": "3867af2a-bbab-59c5-b969-80a9ec2d3cf8",
+      "tags": [
+        "video",
+        "creative"
+      ],
+      "publication_status": "published",
+      "last_verified_at": "2026-09-30T15:00:00Z",
+      "category_ids": [
+        "32b9ed17-d4aa-4e8c-918d-45197e65d9d0"
+      ],
+      "model_ids": [],
+      "capabilities": [
+        {
+          "capability_id": "e0a0e455-0fcb-4f53-b32d-328c5f659bce",
+          "fact_id": "8986441a-13c5-5b68-9ffd-944e4267722c"
+        }
+      ],
+      "facts": [
+        {
+          "id": "1d99b07b-e1c0-593d-b416-af2d5f32b284",
+          "key": "identity",
+          "value": {
+            "name": "Runway",
+            "description": "Creative AI platform with text-to-video generation tools.",
+            "official_url": "https://runwayml.com/",
+            "provider_id": "3867af2a-bbab-59c5-b969-80a9ec2d3cf8"
+          },
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "68814cf0-05e2-585e-ac89-75a8019be191",
+              "source_url": "https://help.runwayml.com/hc/en-us/articles/42460036199443-Text-to-Video-Prompting-Guide",
+              "source_kind": "official_docs",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "8986441a-13c5-5b68-9ffd-944e4267722c",
+          "key": "capability:video_generation",
+          "value": true,
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "09360ba1-a56b-5726-8490-c539503e303b",
+              "source_url": "https://help.runwayml.com/hc/en-us/articles/42460036199443-Text-to-Video-Prompting-Guide",
+              "source_kind": "official_docs",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "f01141b0-9778-5a29-82bd-4027751a5170",
+          "key": "pricing",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "721a7c62-647d-5d55-8add-b1655e23f551",
+          "key": "platforms",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "209464c2-83ba-557c-9c4c-8ad92887a7d8",
+          "key": "api_available",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "e9650f06-1fbf-5088-bc99-29e3c564dd97",
+          "key": "open_source",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "ce11b489-2335-5838-9c55-04e4f2a7ea0c",
+          "key": "deployment_modes",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "5a8b4ef8-0816-5231-909d-8c5389df256f",
+          "key": "offline_supported",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "id": "4d59e33e-3f7a-572a-9336-f471bd050a25",
+      "slug": "elevenlabs",
+      "name": "ElevenLabs",
+      "description": "AI audio platform with text-to-speech generation.",
+      "official_url": "https://elevenlabs.io/",
+      "provider_id": "eedcd2d3-156e-5eb4-9d62-06e0997ee007",
+      "tags": [
+        "audio",
+        "voice"
+      ],
+      "publication_status": "published",
+      "last_verified_at": "2026-09-30T15:00:00Z",
+      "category_ids": [
+        "cf94a43e-decf-4e25-8210-dffc3bbb2f4a"
+      ],
+      "model_ids": [],
+      "capabilities": [
+        {
+          "capability_id": "d3d0c7b4-98d6-40d7-b0e5-f27ae1b6bc6d",
+          "fact_id": "57a1e2c0-f044-5a17-beeb-37cfe92ff76b"
+        }
+      ],
+      "facts": [
+        {
+          "id": "ee065a3a-9525-54af-9705-d27759be3e70",
+          "key": "identity",
+          "value": {
+            "name": "ElevenLabs",
+            "description": "AI audio platform with text-to-speech generation.",
+            "official_url": "https://elevenlabs.io/",
+            "provider_id": "eedcd2d3-156e-5eb4-9d62-06e0997ee007"
+          },
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "bdefffe3-d26d-5ac3-8e5e-84ca6a24db9b",
+              "source_url": "https://elevenlabs.io/text-to-speech",
+              "source_kind": "official_site",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "57a1e2c0-f044-5a17-beeb-37cfe92ff76b",
+          "key": "capability:text_to_speech",
+          "value": true,
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "e860b9d4-1243-5776-9fcf-15ff666476da",
+              "source_url": "https://elevenlabs.io/text-to-speech",
+              "source_kind": "official_site",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "13097f5a-8be2-5877-b951-0fe768f11fcc",
+          "key": "pricing",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "e0579726-3c36-5142-a1bd-97b42ea4189d",
+          "key": "platforms",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "2b9d4fac-176e-51df-aeb1-a5af9435405a",
+          "key": "api_available",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "e60d8e53-94eb-50f0-8e35-7f5fb972a90a",
+          "key": "open_source",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "1eb4f587-9911-5735-abbf-09ed875e2941",
+          "key": "deployment_modes",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "721223f1-0597-5c9d-bafa-7910b817d788",
+          "key": "offline_supported",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "id": "cd1266d0-117e-54d1-ab9b-a168db07defb",
+      "slug": "otter-ai",
+      "name": "Otter.ai",
+      "description": "AI transcription application that converts audio and speech into editable text.",
+      "official_url": "https://otter.ai/",
+      "provider_id": "128a9704-14ef-5c7b-ac54-99f482973a00",
+      "tags": [
+        "transcription",
+        "meetings"
+      ],
+      "publication_status": "published",
+      "last_verified_at": "2026-09-30T15:00:00Z",
+      "category_ids": [
+        "cf94a43e-decf-4e25-8210-dffc3bbb2f4a"
+      ],
+      "model_ids": [],
+      "capabilities": [
+        {
+          "capability_id": "cab029f9-c335-420b-b84f-dfe10848e728",
+          "fact_id": "92ce86be-5134-5996-8544-8d384868cfc6"
+        }
+      ],
+      "facts": [
+        {
+          "id": "c5a90c9b-25fc-5978-a876-e19167904870",
+          "key": "identity",
+          "value": {
+            "name": "Otter.ai",
+            "description": "AI transcription application that converts audio and speech into editable text.",
+            "official_url": "https://otter.ai/",
+            "provider_id": "128a9704-14ef-5c7b-ac54-99f482973a00"
+          },
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "dda0d145-5b35-53f0-a602-97fd0cdf02dc",
+              "source_url": "https://otter.ai/speech-to-text",
+              "source_kind": "official_site",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "92ce86be-5134-5996-8544-8d384868cfc6",
+          "key": "capability:speech_to_text",
+          "value": true,
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "6997edc5-79d4-5545-8dfb-21b65328e988",
+              "source_url": "https://otter.ai/speech-to-text",
+              "source_kind": "official_site",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "f5f8fdae-d1d4-5e91-a8f0-a3659a213dff",
+          "key": "pricing",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "552ced3a-a98b-52d9-afe6-552364ef7873",
+          "key": "platforms",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "3f62823f-f619-58ad-9fb6-59cd48779a5f",
+          "key": "api_available",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "6ae204cc-7c76-5029-80f4-2b589df079a8",
+          "key": "open_source",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "6d6dfe79-af54-58a9-9866-5a64209f2e78",
+          "key": "deployment_modes",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "e38e6c05-5ed0-5e9c-b5af-981e278bc614",
+          "key": "offline_supported",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "id": "be8c3462-5f20-5be5-aa77-5f45c02a1647",
+      "slug": "perplexity",
+      "name": "Perplexity",
+      "description": "Answer engine that searches the web and returns answers backed by cited sources.",
+      "official_url": "https://www.perplexity.ai/",
+      "provider_id": "d508a5ce-e84e-57c6-8c47-2332da22adc2",
+      "tags": [
+        "research",
+        "search"
+      ],
+      "publication_status": "published",
+      "last_verified_at": "2026-09-30T15:00:00Z",
+      "category_ids": [
+        "fae98299-f031-4f98-99ac-7b01db73e970"
+      ],
+      "model_ids": [],
+      "capabilities": [
+        {
+          "capability_id": "7b18da9e-2b21-4885-8b2c-a946b2b082d4",
+          "fact_id": "7d77dc34-9bdc-5a0b-b2a2-23329c017b1c"
+        }
+      ],
+      "facts": [
+        {
+          "id": "508adcb4-69ce-5576-bbf8-217180ef4eda",
+          "key": "identity",
+          "value": {
+            "name": "Perplexity",
+            "description": "Answer engine that searches the web and returns answers backed by cited sources.",
+            "official_url": "https://www.perplexity.ai/",
+            "provider_id": "d508a5ce-e84e-57c6-8c47-2332da22adc2"
+          },
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "b42a5404-bb1b-5564-9e8b-ba616f3c54b0",
+              "source_url": "https://www.perplexity.ai/help-center/en/articles/10352155-what-is-perplexity",
+              "source_kind": "official_docs",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "7d77dc34-9bdc-5a0b-b2a2-23329c017b1c",
+          "key": "capability:web_research",
+          "value": true,
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "d9604a9d-ce47-5c66-8c9f-0fec71d54924",
+              "source_url": "https://www.perplexity.ai/help-center/en/articles/10352155-what-is-perplexity",
+              "source_kind": "official_docs",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "3610bc9b-b75a-5551-9488-1e9537caa8a0",
+          "key": "pricing",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "d3b8ccf5-dead-5977-bca8-33ee5e500f5e",
+          "key": "platforms",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "c08000a5-809b-51d2-9a85-51c1a84d936f",
+          "key": "api_available",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "b561c3e1-a974-5abf-a23b-cad8392e4a3e",
+          "key": "open_source",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "d6a34543-76af-5e7e-a4d9-59406779a991",
+          "key": "deployment_modes",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "830a7405-f60d-5b6a-91f8-860aae9c248e",
+          "key": "offline_supported",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "id": "4f0ee083-f277-5b0f-ab0e-805d4ae27e28",
+      "slug": "notebooklm",
+      "name": "NotebookLM",
+      "description": "AI research assistant grounded in user-provided sources, including PDF documents.",
+      "official_url": "https://notebooklm.google.com/",
+      "provider_id": "9be4c831-3994-5050-969a-a1242b36045c",
+      "tags": [
+        "research",
+        "documents"
+      ],
+      "publication_status": "published",
+      "last_verified_at": "2026-09-30T15:00:00Z",
+      "category_ids": [
+        "fae98299-f031-4f98-99ac-7b01db73e970"
+      ],
+      "model_ids": [],
+      "capabilities": [
+        {
+          "capability_id": "540e901b-3a4a-449f-8425-316b483c7108",
+          "fact_id": "6da20133-a221-56ae-86c7-12562f303b69"
+        }
+      ],
+      "facts": [
+        {
+          "id": "bacd0691-e1eb-58f6-8532-d58297635415",
+          "key": "identity",
+          "value": {
+            "name": "NotebookLM",
+            "description": "AI research assistant grounded in user-provided sources, including PDF documents.",
+            "official_url": "https://notebooklm.google.com/",
+            "provider_id": "9be4c831-3994-5050-969a-a1242b36045c"
+          },
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "b857755e-7323-5767-a6a2-d637f4bc1e8e",
+              "source_url": "https://support.google.com/notebooklm/answer/16215270?co=GENIE.Platform%3DDesktop&hl=en",
+              "source_kind": "official_docs",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "6da20133-a221-56ae-86c7-12562f303b69",
+          "key": "capability:pdf_extraction",
+          "value": true,
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "db1dd55e-6eaf-5129-84d0-a7b532ee687f",
+              "source_url": "https://support.google.com/notebooklm/answer/16215270?co=GENIE.Platform%3DDesktop&hl=en",
+              "source_kind": "official_docs",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "2ca892e8-dbf3-52c4-8072-48b0afa6989c",
+          "key": "pricing",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "42b300ad-4e57-53b9-bb28-6d2cc932dc3d",
+          "key": "platforms",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "db463e86-df9a-57f9-b5b6-6768ffe6e408",
+          "key": "api_available",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "e0097299-988b-5064-8767-2cce284db753",
+          "key": "open_source",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "5202d75d-cffc-5990-9ed2-257904d01449",
+          "key": "deployment_modes",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "f5ea61be-9f7a-5563-8c32-60bbec02c34e",
+          "key": "offline_supported",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "id": "a787084c-7bbd-5d40-8a0b-847959abde5f",
+      "slug": "zapier",
+      "name": "Zapier",
+      "description": "Automation platform for building workflows that run actions across connected applications.",
+      "official_url": "https://zapier.com/",
+      "provider_id": "d3e011fa-5c43-50ad-9545-76de4c96ef88",
+      "tags": [
+        "automation",
+        "workflows"
+      ],
+      "publication_status": "published",
+      "last_verified_at": "2026-09-30T15:00:00Z",
+      "category_ids": [
+        "794495f8-47d4-49e2-9394-0721c9bfeed0"
+      ],
+      "model_ids": [],
+      "capabilities": [
+        {
+          "capability_id": "f985d53d-8e4e-4265-b29e-58bcb4498fa7",
+          "fact_id": "26ba4f04-2f1e-5fee-b23d-b821db6d88f6"
+        }
+      ],
+      "facts": [
+        {
+          "id": "1b5d24a3-9de1-501d-a467-8865f0cbc600",
+          "key": "identity",
+          "value": {
+            "name": "Zapier",
+            "description": "Automation platform for building workflows that run actions across connected applications.",
+            "official_url": "https://zapier.com/",
+            "provider_id": "d3e011fa-5c43-50ad-9545-76de4c96ef88"
+          },
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "b621fe08-6e21-55a0-acd1-ec2b44c084fe",
+              "source_url": "https://zapier.com/",
+              "source_kind": "official_site",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "26ba4f04-2f1e-5fee-b23d-b821db6d88f6",
+          "key": "capability:workflow_automation",
+          "value": true,
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "e021e6e7-7a3b-5266-8ed7-938d75c5931a",
+              "source_url": "https://zapier.com/",
+              "source_kind": "official_site",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "53fe8643-b86a-59a0-8a61-06f6426c3892",
+          "key": "pricing",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "32522058-48ba-555c-abb5-4a282fb66175",
+          "key": "platforms",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "9c768a24-355e-579e-96a0-77dcd4a785f6",
+          "key": "api_available",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "3558bcd5-96e9-5c4d-82c4-a86ff9029f63",
+          "key": "open_source",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "de2a8084-6b32-5159-8f15-75a959d8acda",
+          "key": "deployment_modes",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "ec648130-ad3d-5ab5-aed8-e26323f45ec8",
+          "key": "offline_supported",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "id": "a3cf6efc-772e-586f-8f9b-af64743459eb",
+      "slug": "n8n",
+      "name": "n8n",
+      "description": "Workflow automation platform with visual workflows, triggers, integrations, and code steps.",
+      "official_url": "https://n8n.io/",
+      "provider_id": "6ae96203-597c-557b-8ba0-f4adecbcfe90",
+      "tags": [
+        "automation",
+        "workflows"
+      ],
+      "publication_status": "published",
+      "last_verified_at": "2026-09-30T15:00:00Z",
+      "category_ids": [
+        "794495f8-47d4-49e2-9394-0721c9bfeed0"
+      ],
+      "model_ids": [],
+      "capabilities": [
+        {
+          "capability_id": "f985d53d-8e4e-4265-b29e-58bcb4498fa7",
+          "fact_id": "ab924a2b-d31f-5262-9cc0-136ff29f0fcf"
+        }
+      ],
+      "facts": [
+        {
+          "id": "10e15a8b-cec8-5e4d-b8c5-2bdff2494ded",
+          "key": "identity",
+          "value": {
+            "name": "n8n",
+            "description": "Workflow automation platform with visual workflows, triggers, integrations, and code steps.",
+            "official_url": "https://n8n.io/",
+            "provider_id": "6ae96203-597c-557b-8ba0-f4adecbcfe90"
+          },
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "249c0832-63da-5532-8139-d20a2d6200df",
+              "source_url": "https://n8n.io/features",
+              "source_kind": "official_site",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "ab924a2b-d31f-5262-9cc0-136ff29f0fcf",
+          "key": "capability:workflow_automation",
+          "value": true,
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "01795c8e-c6c7-553e-80f4-e9b5dff5e419",
+              "source_url": "https://n8n.io/features",
+              "source_kind": "official_site",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "56e88c41-fe42-5af6-8b7f-fc227ba65b50",
+          "key": "pricing",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "74868589-bc91-5ede-aa46-854204ca1016",
+          "key": "platforms",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "7472ea6c-8433-5165-a557-665187cb39e5",
+          "key": "api_available",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "d107bb47-dbb2-5aef-bc32-bdcefa1308a1",
+          "key": "open_source",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "d8f2fc8f-e94a-5bae-a4a9-3da6fa8db767",
+          "key": "deployment_modes",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "1d8fe986-9452-50a8-b063-7d19dff43ae2",
+          "key": "offline_supported",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "id": "4a5529e6-8ed3-5616-a430-bdf6f6274ab4",
+      "slug": "langflow",
+      "name": "Langflow",
+      "description": "Visual framework for building and serving AI application workflows from connected components.",
+      "official_url": "https://www.langflow.org/",
+      "provider_id": "c32dc398-3922-5296-aba0-7351a0540dcd",
+      "tags": [
+        "agents",
+        "orchestration"
+      ],
+      "publication_status": "published",
+      "last_verified_at": "2026-09-30T15:00:00Z",
+      "category_ids": [
+        "abb4f303-e4cd-4add-9e6f-867d33cafc21"
+      ],
+      "model_ids": [],
+      "capabilities": [
+        {
+          "capability_id": "ac317448-3eab-49b6-9d8f-05a1b253afe9",
+          "fact_id": "38334391-606e-5646-8de3-92674efb481e"
+        }
+      ],
+      "facts": [
+        {
+          "id": "03a4c735-6e77-58eb-b9e7-1c7244e586a9",
+          "key": "identity",
+          "value": {
+            "name": "Langflow",
+            "description": "Visual framework for building and serving AI application workflows from connected components.",
+            "official_url": "https://www.langflow.org/",
+            "provider_id": "c32dc398-3922-5296-aba0-7351a0540dcd"
+          },
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "07b84733-900d-51d8-ba0b-249d4741a2ca",
+              "source_url": "https://docs.langflow.org/",
+              "source_kind": "official_docs",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "38334391-606e-5646-8de3-92674efb481e",
+          "key": "capability:app_orchestration",
+          "value": true,
+          "verification_status": "verified",
+          "evidence": [
+            {
+              "id": "10c4c674-9cbf-529e-b98c-0468fc3f99a6",
+              "source_url": "https://docs.langflow.org/",
+              "source_kind": "official_docs",
+              "checked_at": "2026-09-30T15:00:00Z",
+              "expires_at": "2026-12-29T15:00:00Z",
+              "checked_by": "ai-atlas-maintainers"
+            }
+          ]
+        },
+        {
+          "id": "eb22f868-0eb7-5ac1-abbb-71d082e73852",
+          "key": "pricing",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "7ee9559d-1367-5719-902b-ef8978c08bba",
+          "key": "platforms",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "e6b5c315-d27f-5eb2-a2d1-7ca66e408fa4",
+          "key": "api_available",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "b433c94d-bcc2-5a24-828d-875f4787ad10",
+          "key": "open_source",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "1baf9c26-c1db-5576-bc97-77b29bebc799",
+          "key": "deployment_modes",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        },
+        {
+          "id": "c3db87ef-cb8a-5cb4-b747-c5498aa0efb5",
+          "key": "offline_supported",
+          "value": null,
+          "verification_status": "unknown",
+          "evidence": []
+        }
+      ]
+    }
+  ]
+}

@@ -113,7 +113,7 @@ Implementation: [curated_models.py](../../apps/api/src/ai_atlas_api/curated_mode
 
 ### Document và entities
 
-Mỗi document có đủ arrays `providers`, `models`, `categories`, `capabilities`, `tools`; arrays có thể rỗng. [taxonomy.json](../../data/curated/taxonomy.json) chứa 8 categories đã chốt trong API contract và 15 capability definitions, không chứa tool/model/provider giả. Đây là vocabulary biên tập, không phải evidence khẳng định khả năng của tool. Các file tools sau này có thể reference UUID trong taxonomy; resolve references trên tập file/DB thuộc 005.2, không phải chức năng của parser 005.1.
+Mỗi document có đủ arrays `providers`, `models`, `categories`, `capabilities`, `tools`; arrays có thể rỗng. [taxonomy.json](../../data/curated/taxonomy.json) chứa 8 categories và 15 capability definitions với UUID cố định; [tools.json](../../data/curated/tools.json) chứa seed 15 tools/14 providers của 005.5 và reference taxonomy UUIDs. Resolve references trên toàn batch hoặc DB snapshot, không phụ thuộc thứ tự files.
 
 | Object | Fields bắt buộc |
 |---|---|
@@ -166,7 +166,7 @@ Ví dụ fact **synthetic chỉ minh họa format**, không đưa vào curated p
 
 Facts nằm trong tool; evidence nằm trong fact. Importer sẽ map parent IDs thành `tool_facts.tool_id`, `evidence.fact_id` và assign `evidence.fact_revision` khớp revision của fact được nguồn chứng minh. Không nhận `revision`, `fact_revision`, `search_vector`, timestamps created_at/updated_at hoặc embeddings trong curated input; chúng do importer/database quản lý. Khi nội dung fact đổi, evidence UUID cũ không được tự gắn sang revision mới: giữ lịch sử, curator cung cấp evidence mới sau re-verification; enforce khi đối chiếu DB thuộc 005.2/005.4. Import lặp content không đổi phải giữ IDs/revisions. `last_verified_at` là ngày curator review record, không thay thế dates/TTL từng evidence.
 
-Parser 005.1 chỉ chứng minh type/shape/unknown-null invariant. Semantic validations về source syntax, uniqueness, FK existence, identity agreement, time ordering/TTL/freshness và điều kiện publish đã triển khai ở 005.2, chi tiết tại mục 9; source authenticity vẫn do maintainer xác minh thủ công. CLI dry-run thuộc 005.3, atomic upsert/revisions/reindex thuộc 005.4, seed 15 tools thật thuộc 005.5. Curation notes và excerpts là nội dung private/untrusted, không được thêm vào public API projection hoặc prompt như instructions. Synthetic fixtures chỉ nằm trong tests, tách khỏi `data/curated`.
+Parser 005.1 chỉ chứng minh type/shape/unknown-null invariant. Semantic validation đã triển khai ở 005.2, CLI dry-run ở 005.3, atomic import ở 005.4 và seed 15 tools thật ở 005.5; source authenticity vẫn do maintainer xác minh thủ công. Curation notes và excerpts là nội dung private/untrusted, không được thêm vào public API projection hoặc prompt như instructions. Synthetic fixtures chỉ nằm trong tests, tách khỏi `data/curated`; curated seed hiện ở `data/curated/tools.json`.
 
 ## 9. Semantic import validation — TASK-005.2
 
@@ -255,6 +255,16 @@ Implementation: [curated_import.py](../../apps/api/src/ai_atlas_api/curated_impo
 
 Trong cùng transaction, importer xóa mọi tool_embeddings của tool có tool revision/projection đổi; TASK-008 sẽ rebuild embeddings. search_vector dùng PostgreSQL simple config: tool name weight A; description/tags weight B; category slug+name và linked capability key+name weight C. Reindex chạy sau join replacement, nên search không thấy projection nửa cũ/nửa mới. Category/capability label updates propagate tới linked tools không cần include lại tool records.
 
-Import không fetch/verify source content, không gọi LLM, không tạo seed tool và không cung cấp historical rollback command. “Rollback” trong 005.4 là database transaction rollback khi batch lỗi; revisions/evidence history được giữ để audit, không phải event-sourced restore API. 005.5 chịu trách nhiệm 15 curated tools; 005.6 kiểm tra importer + public API end-to-end.
+Import không fetch/verify source content, không gọi LLM và không cung cấp historical rollback command. “Rollback” trong 005.4 là database transaction rollback khi batch lỗi; revisions/evidence history được giữ để audit, không phải event-sourced restore API. Curated seed đã thêm ở 005.5 (mục 12); 005.6 kiểm tra importer + public API end-to-end.
 
+
+## 12. Curated seed — TASK-005.5
+
+[data/curated/tools.json](../../data/curated/tools.json) là seed reviewable đầu tiên: 15 published tools, 14 providers, không khai báo model nào. Tool set: ChatGPT, Claude, Gemini, GitHub Copilot, Cursor, Midjourney, Adobe Firefly, Runway, ElevenLabs, Otter.ai, Perplexity, NotebookLM, Zapier, n8n và Langflow. Mọi 8 categories có ít nhất một tool; relations dùng 10 capability keys đã có trong taxonomy, không tạo vocabulary ngoài contract.
+
+Mỗi tool có stable UUID, description tiếng Anh, official URL, provider, tags, last_verified_at và đúng một verified identity fact cùng ít nhất một verified-true capability fact. Tổng seed tools có 120 facts và 30 evidence records. Evidence trỏ tới official product/help/docs domains, được maintainer review ngày 30/09/2026, checked_by=ai-atlas-maintainers và expires_at=29/12/2026 15:00Z theo policy 90 ngày. Source URLs là provenance của claim cụ thể; importer không fetch chúng và URL chính thức không tự chứng minh mọi fact khác.
+
+Sáu facts pricing, platforms, api_available, open_source, deployment_modes và offline_supported được ghi explicit null/unknown cho **từng tool**, không có evidence. Không suy free tier, API, platform, open-source, local/offline hoặc model usage từ marketing/source khác. model_ids đều rỗng và không có model_usage facts. Đây là unknown minh bạch, không phải false và không thỏa hard constraints.
+
+Seed không chứa synthetic/example fixture. Synthetic records vẫn chỉ nằm trong tests và temporary smoke databases. File chưa được tự động import vào development/production DB; operator phải chạy dry-run rồi import cả taxonomy.json và tools.json. Evidence phải được curator re-check và cấp evidence UUID mới khi claim/revision đổi hoặc trước khi nguồn hết freshness; không kéo dài timestamp chỉ để qua validator.
 

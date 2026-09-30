@@ -106,3 +106,65 @@ Update dùng `UPDATE ... WHERE owner_id=? AND version=?` trong transaction, tăn
 Không thêm quota service riêng trong MVP. `generation_runs.created_at` và owner phục vụ đếm requests theo cửa sổ; thêm index `(owner_id,created_at)` và `(created_at,status)`. Khi admission, transaction khóa user row để kiểm tra quota và tạo run `running`; mọi run đã reserve đều tính vào quota kể cả failed, trừ request bị từ chối trước admission. Với budget toàn hệ thống, dùng một PostgreSQL transaction advisory lock có key cố định cho tháng UTC để kiểm tra tổng settled cost cộng outstanding reservations và ghi reservation atomically. Thứ tự khóa luôn global budget rồi user để tránh deadlock.
 
 Run finished settle actual estimated cost và bỏ reservation trong transaction; request bị hủy/timeout vẫn ghi phần cost đã phát sinh. Cleanup run `running` quá deadline không được giải phóng khoản cost chưa rõ một cách lạc quan: giữ upper-bound như chi phí ước tính cho tới đối soát. Metadata retention 30 ngày phải giữ nguyên các rows còn thuộc tháng budget hiện tại hoặc reservation chưa được đối soát; khi tháng đã đóng mới áp dụng purge. Các chi tiết này cần concurrency tests ở TASK-015, không dựa vào bộ đếm trong memory.
+
+## 8. Curated JSON format — TASK-005.1
+
+Implementation: [curated_models.py](../../apps/api/src/ai_atlas_api/curated_models.py). Input là JSON UTF-8 không BOM, snake_case, với `schema_version: 1`. Dùng `CuratedCatalog.model_validate_json` tại file boundary; `model_validate` strict trên Python objects yêu cầu UUID/datetime objects đúng type. Có thể lấy JSON Schema bằng `CuratedCatalog.model_json_schema()`; không giữ một bản generated schema thứ hai dễ lệch models.
+
+### Document và entities
+
+Mỗi document có đủ arrays `providers`, `models`, `categories`, `capabilities`, `tools`; arrays có thể rỗng. [taxonomy.json](../../data/curated/taxonomy.json) chứa 8 categories đã chốt trong API contract và 15 capability definitions, không chứa tool/model/provider giả. Đây là vocabulary biên tập, không phải evidence khẳng định khả năng của tool. Các file tools sau này có thể reference UUID trong taxonomy; resolve references trên tập file/DB thuộc 005.2, không phải chức năng của parser 005.1.
+
+| Object | Fields bắt buộc |
+|---|---|
+| Provider | `id, slug, name, website_url` (URL hoặc null) |
+| Model | `id, slug, name, provider_id` (UUID hoặc null) |
+| Category | `id, slug, name` |
+| Capability definition | `id, key, name, description` |
+| Tool | `id, slug, name, description, official_url, provider_id, tags, publication_status, last_verified_at, category_ids, model_ids, capabilities, facts` |
+| Tool capability relation | `capability_id, fact_id` |
+| Fact | `id, key, value, verification_status, evidence` |
+| Evidence trong fact | `id, source_url, source_kind, checked_at, expires_at, checked_by` |
+
+Nullable fields vẫn phải ghi explicit null: tool `provider_id`, `last_verified_at`; mọi nullable field của structured fact values. Chỉ `curation_notes` của tool/fact và `excerpt` của evidence được omitted, mặc định null. Tool `publication_status` bắt buộc là draft/published/archived, không auto-publish. `checked_by` dùng maintainer handle, không cần email/PII.
+
+UUID của entity/fact/evidence do curator cấp một lần, commit và giữ ổn định; đổi name/slug không đổi ID. Taxonomy IDs đã được ghi cố định trong JSON, không generate lại lúc load. Slugs dùng lowercase letters/digits với hyphens; capability keys dùng lowercase letters/digits với underscores. Các text aliases trim và Unicode NFC; enum values phải khớp contract, không tự ép chữ hoa thành chữ thường. Name/tag tối đa 200 chars, description/long text 4000, slug/key 100, excerpt 1000 và curation_notes 2000. URLs dùng HTTPS với tối đa 2048 chars; đây chỉ là kiểm tra hình thức URL, không chứng minh nguồn chính thức và không fetch URL. Timestamps phải có timezone, được chuẩn hóa UTC; không nhận naive dates hoặc numeric epoch.
+
+### Fact values
+
+`CuratedFact` là union theo key: fixed keys và namespace patterns chỉ nhận value schema tương ứng. Tất cả nested objects forbid extra keys và dùng strict types; không ép string `"false"`/number 0 thành boolean. Numeric fields nhận JSON number hữu hạn, không âm; boolean không phải number.
+
+| Key | Value schema |
+|---|---|
+| pricing | Object hoặc null. Object có đủ `model, currency, monthly_min, billing_basis, usage_limits, free_tier`; model theo enum hiện có; currency là mã 3 chữ hoa hoặc null; monthly_min là number ≥ 0 hoặc null; billing_basis/usage_limits là text hoặc null; free_tier boolean hoặc null |
+| platforms | Array platform enum hiện có hoặc null |
+| api_available, offline_supported | Boolean hoặc null |
+| open_source | `{status: boolean|null, license: string|null}` hoặc null |
+| deployment_modes | Array cloud/local hoặc null |
+| min_ram_gb | Number ≥ 0 hoặc null |
+| identity | `{name, description, official_url, provider_id: UUID|null}` hoặc null |
+| capability:&lt;key&gt; | Boolean hoặc null; suffix theo capability key grammar |
+| model_usage:&lt;model_slug&gt; | Boolean hoặc null; suffix theo slug grammar |
+| integration:&lt;target_key&gt; | `{target_tool_id: UUID|null, target_name, mechanism: string|null, conditions: string[]|null}` hoặc null; target key lowercase letters/digits, phân cách bằng hyphen hoặc underscore |
+
+Theo ADR-010, top-level `value: null` bắt buộc `verification_status: unknown`, và unknown bắt buộc value null. False là phủ định, không phải unknown. Structured values có thể có subfields null: ví dụ pricing model đã biết nhưng usage_limits chưa biết, hoặc open_source.status chưa biết. Những null này không xác nhận miễn phí/false/khả năng đáp ứng hard constraint. `conditions: []` là biết không có điều kiện được ghi; null là chưa biết. Pricing text không tự trở thành cost/rate đã parse; eligibility/budget evaluator vẫn thuộc TASK-009.
+
+Ví dụ fact **synthetic chỉ minh họa format**, không đưa vào curated production data:
+
+```json
+{
+  "id": "10000000-0000-4000-8000-000000000001",
+  "key": "api_available",
+  "value": null,
+  "verification_status": "unknown",
+  "evidence": [],
+  "curation_notes": "Chưa có nguồn xác minh API."
+}
+```
+
+### Metadata do importer quản lý và phạm vi
+
+Facts nằm trong tool; evidence nằm trong fact. Importer sẽ map parent IDs thành `tool_facts.tool_id`, `evidence.fact_id` và assign `evidence.fact_revision` khớp revision của fact được nguồn chứng minh. Không nhận `revision`, `fact_revision`, `search_vector`, timestamps created_at/updated_at hoặc embeddings trong curated input; chúng do importer/database quản lý. Khi nội dung fact đổi, evidence UUID cũ không được tự gắn sang revision mới: giữ lịch sử, curator cung cấp evidence mới sau re-verification; enforce khi đối chiếu DB thuộc 005.2/005.4. Import lặp content không đổi phải giữ IDs/revisions. `last_verified_at` là ngày curator review record, không thay thế dates/TTL từng evidence.
+
+Parser 005.1 chỉ chứng minh type/shape/unknown-null invariant, không chứng minh source authenticity, uniqueness, FK existence, identity agreement, time ordering/TTL/freshness hoặc điều kiện publish. Các semantic validations đó thuộc 005.2; source verification do maintainer thực hiện thủ công. CLI dry-run thuộc 005.3, atomic upsert/revisions/reindex thuộc 005.4, seed 15 tools thật thuộc 005.5. Curation notes và excerpts là nội dung private/untrusted, không được thêm vào public API projection hoặc prompt như instructions. Synthetic fixtures chỉ nằm trong tests, tách khỏi `data/curated`.
+

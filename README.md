@@ -4,7 +4,7 @@
 
 AI Atlas là nền tảng khám phá AI tools và xây dựng AI stack theo mục tiêu, thiết bị và ngân sách của người dùng. Sản phẩm kết nối một thư viện được biên tập với hệ thống đề xuất có căn cứ, giúp trả lời: có công cụ nào, công cụ nào phù hợp và chúng kết hợp thành quy trình như thế nào?
 
-**Trạng thái ngày 30/09/2026:** TASK-001..004 đã Done. Foundation có Next.js shell song ngữ, FastAPI health/readiness, PostgreSQL + pgvector bằng Compose, Gemini adapter thật và CI không gọi dịch vụ trả phí. Năm migrations bao phủ catalog/facts/evidence/embeddings/users/runs/stacks cùng indexes; ADR-010 Accepted. Catalog API đã có categories/list/detail, keyword search, filters với fresh evidence, pagination và OpenAPI; 48 unit tests và 45 DB integration tests pass. Stack API, dữ liệu công cụ đã xác minh, authentication flow, recommendation feature và benchmark chưa được triển khai. Các chỉ tiêu sản phẩm trong tài liệu vẫn là mục tiêu, chưa phải kết quả đã đo.
+**Trạng thái ngày 30/09/2026:** TASK-001..004 và subtask 005.1 đã Done; TASK-005 tổng vẫn In progress. Foundation có Next.js shell song ngữ, FastAPI health/readiness, PostgreSQL + pgvector bằng Compose, Gemini adapter thật và CI không gọi dịch vụ trả phí. Năm migrations bao phủ catalog/facts/evidence/embeddings/users/runs/stacks cùng indexes; ADR-010 Accepted. Catalog API đã có categories/list/detail, keyword search, filters với fresh evidence, pagination và OpenAPI. Curated JSON/Pydantic format đã có 8 categories và 15 capability definitions với UUID cố định; full 109 unit tests và 46 DB integration tests pass. Importer/seed tools, Stack API, dữ liệu công cụ đã xác minh, authentication flow, recommendation feature và benchmark chưa được triển khai. Các chỉ tiêu sản phẩm trong tài liệu vẫn là mục tiêu, chưa phải kết quả đã đo.
 
 ## Vấn đề và người dùng
 
@@ -159,7 +159,7 @@ Sau khi apply migrations và khởi động API, xem OpenAPI tại `http://127.0
 
 Database chưa có curated seed thì list trả rỗng; category slug chưa tồn tại trả 422. TASK-005 sẽ tạo 8 categories và 15 tools có nguồn. Filter true/false chỉ nhận facts verified với evidence cùng revision còn hạn; detail hiển thị stale facts dưới trạng thái unverified. Query key lạ hoặc parameter lặp trả 422, draft/archived detail trả 404, DB chưa sẵn sàng trả 503. Chi tiết response và filters ở [API contract](docs/architecture/API_DESIGN.md).
 
-Review fixes TASK-004: model relation chỉ hiển thị khi model-use fact verified fresh và value true; fact verified false vẫn giữ nguồn nhưng không công bố model. HTTP error envelope giữ exception headers, gồm `Allow: GET` cho 405, cùng request ID. Hai regression cases, 49 unit tests, 46 integration tests và smoke HTTP thật đã pass; evidence trong backlog. TASK-005 chưa bắt đầu.
+Review fixes TASK-004: model relation chỉ hiển thị khi model-use fact verified fresh và value true; fact verified false vẫn giữ nguồn nhưng không công bố model. HTTP error envelope giữ exception headers, gồm `Allow: GET` cho 405, cùng request ID. Hai regression cases, 49 unit tests, 46 integration tests và smoke HTTP thật đã pass; evidence trong backlog. TASK-005 hiện In progress; 005.1 đã Done, importer/seed tools chưa triển khai.
 
 Kiểm thử TASK-004 trên Windows có cache cũ bị ACL có thể dùng các lệnh đã chạy sau (DATABASE_URL trỏ DB local; tests tạo rồi xóa database tạm, không seed vào database chính):
 
@@ -170,3 +170,17 @@ Kiểm thử TASK-004 trên Windows có cache cũ bị ACL có thể dùng các 
 .venv/Scripts/python.exe -m pytest -p no:cacheprovider -m "not integration and not live"
 .venv/Scripts/python.exe -m pytest -p no:cacheprovider -m integration
 ```
+
+## Curated format — TASK-005.1
+
+[Format và metadata ownership](docs/architecture/DATA_MODEL.md#8-curated-json-format--task-0051) được triển khai bằng Pydantic strict trong `apps/api/src/ai_atlas_api/curated_models.py`. `data/curated/taxonomy.json` có 8 categories và 15 capability definitions với UUID cố định; không chứa synthetic tools hoặc tool claims chưa xác minh. JSON Schema lấy qua `CuratedCatalog.model_json_schema()`.
+
+Đọc/validate vocabulary hiện có từ repo root (không ghi DB hoặc gọi API):
+
+```powershell
+.venv/Scripts/python.exe -X utf8 -c "import sys; from pathlib import Path; sys.path.insert(0, 'apps/api/src'); from ai_atlas_api.curated_models import CuratedCatalog; catalog = CuratedCatalog.model_validate_json(Path('data/curated/taxonomy.json').read_bytes()); print('schema_version=', catalog.schema_version, 'categories=', len(catalog.categories), 'capabilities=', len(catalog.capabilities), 'tools=', len(catalog.tools))"
+.venv/Scripts/python.exe -m pytest -p no:cacheprovider apps/api/tests/unit/test_curated_models.py
+```
+
+TASK-005.1 đã Done; TASK-005 tổng vẫn In progress. Schema parsing không thay source/FK/freshness/publication validation của 005.2. Chưa có CLI dry-run/upsert hoặc seed 15 tools; vocabulary chưa được import vào DB. Unit/fixtures synthetic tách khỏi curated data. Verification 005.1: 60 schema cases, full 109 unit tests, 46 integration tests, Ruff/mypy và schema/vocabulary smoke pass; không gọi Gemini.
+

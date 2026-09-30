@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "providers": [],
+  "models": [],
+  "categories": [
+    {
+      "id": "93b30de7-0716-4a5f-9826-32a6aa108f67",
+      "slug": "chatting-assistants",
+      "name": "Chatting & Assistants"
+    },
+    {
+      "id": "62e9d215-4f81-43dd-ae24-d8d405b54ca7",
+      "slug": "coding-development",
+      "name": "Coding & Development"
+    },
+    {
+      "id": "6c0d8b33-21a5-4840-b0c5-48e7b93fe606",
+      "slug": "image-generation-editing",
+      "name": "Image Generation & Editing"
+    },
+    {
+      "id": "32b9ed17-d4aa-4e8c-918d-45197e65d9d0",
+      "slug": "video-generation-editing",
+      "name": "Video Generation & Editing"
+    },
+    {
+      "id": "cf94a43e-decf-4e25-8210-dffc3bbb2f4a",
+      "slug": "audio-speech",
+      "name": "Audio & Speech"
+    },
+    {
+      "id": "fae98299-f031-4f98-99ac-7b01db73e970",
+      "slug": "research-learning",
+      "name": "Research & Learning"
+    },
+    {
+      "id": "794495f8-47d4-49e2-9394-0721c9bfeed0",
+      "slug": "productivity-automation",
+      "name": "Productivity & Automation"
+    },
+    {
+      "id": "abb4f303-e4cd-4add-9e6f-867d33cafc21",
+      "slug": "ai-agents",
+      "name": "AI Agents"
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "c940fc47-e420-40c2-bfcc-fc876ce2f98e",
+      "key": "text_generation",
+      "name": "Text generation",
+      "description": "Tạo nội dung văn bản từ yêu cầu đầu vào."
+    },
+    {
+      "id": "5c544515-726c-40a3-9095-2bb451f7e18a",
+      "key": "code_generation",
+      "name": "Code generation",
+      "description": "Sinh mã nguồn từ yêu cầu hoặc ngữ cảnh lập trình."
+    },
+    {
+      "id": "f9a5228e-2e98-4e25-aafb-a6042cd1dc1b",
+      "key": "code_review",
+      "name": "Code review",
+      "description": "Phân tích mã nguồn và đề xuất cải thiện hoặc phát hiện lỗi."
+    },
+    {
+      "id": "be00a5bf-a783-4d55-91c2-6c1745688765",
+      "key": "image_generation",
+      "name": "Image generation",
+      "description": "Tạo hình ảnh từ yêu cầu đầu vào."
+    },
+    {
+      "id": "45e16f25-97b6-46c3-bcb6-0576117514a0",
+      "key": "image_editing",
+      "name": "Image editing",
+      "description": "Chỉnh sửa hình ảnh đã có."
+    },
+    {
+      "id": "e0a0e455-0fcb-4f53-b32d-328c5f659bce",
+      "key": "video_generation",
+      "name": "Video generation",
+      "description": "Tạo video từ yêu cầu đầu vào."
+    },
+    {
+      "id": "a158b3ab-e785-4fa6-a019-8590475ec583",
+      "key": "video_editing",
+      "name": "Video editing",
+      "description": "Chỉnh sửa video đã có."
+    },
+    {
+      "id": "cab029f9-c335-420b-b84f-dfe10848e728",
+      "key": "speech_to_text",
+      "name": "Speech to text",
+      "description": "Chuyển lời nói thành văn bản."
+    },
+    {
+      "id": "d3d0c7b4-98d6-40d7-b0e5-f27ae1b6bc6d",
+      "key": "text_to_speech",
+      "name": "Text to speech",
+      "description": "Chuyển văn bản thành giọng nói."
+    },
+    {
+      "id": "7b18da9e-2b21-4885-8b2c-a946b2b082d4",
+      "key": "web_research",
+      "name": "Web research",
+      "description": "Tìm kiếm và tổng hợp thông tin từ nguồn trên web."
+    },
+    {
+      "id": "540e901b-3a4a-449f-8425-316b483c7108",
+      "key": "pdf_extraction",
+      "name": "PDF extraction",
+      "description": "Trích xuất văn bản hoặc dữ liệu từ tài liệu PDF."
+    },
+    {
+      "id": "9fc1b01f-1cd7-4f4b-b50f-bbf6b67ccafd",
+      "key": "embedding",
+      "name": "Embedding",
+      "description": "Tạo vector biểu diễn nội dung để phục vụ tìm kiếm hoặc xử lý ngữ nghĩa."
+    },
+    {
+      "id": "cf338e11-bb07-4122-9fc7-91e5fa56342f",
+      "key": "vector_storage",
+      "name": "Vector storage",
+      "description": "Lưu trữ và truy vấn các vector embedding."
+    },
+    {
+      "id": "ac317448-3eab-49b6-9d8f-05a1b253afe9",
+      "key": "app_orchestration",
+      "name": "App orchestration",
+      "description": "Kết nối các thành phần của ứng dụng thành một pipeline thực thi."
+    },
+    {
+      "id": "f985d53d-8e4e-4265-b29e-58bcb4498fa7",
+      "key": "workflow_automation",
+      "name": "Workflow automation",
+      "description": "Tự động hóa chuỗi tác vụ theo triggers và các bước đã định nghĩa."
+    }
+  ],
+  "tools": []
+}

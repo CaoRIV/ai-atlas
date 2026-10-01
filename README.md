@@ -4,7 +4,7 @@
 
 AI Atlas là nền tảng khám phá AI tools và xây dựng AI stack theo mục tiêu, thiết bị và ngân sách của người dùng. Sản phẩm kết nối một thư viện được biên tập với hệ thống đề xuất có căn cứ, giúp trả lời: có công cụ nào, công cụ nào phù hợp và chúng kết hợp thành quy trình như thế nào?
 
-**Trạng thái ngày 01/10/2026:** TASK-001..005 Done; TASK-006 In progress với 006.1 Catalog boundary và 006.2 app shell/UI foundation đã Done. Next.js có typed Catalog client, ba same-origin allowlisted read routes, semantic dark/light/system themes và responsive navigation accessible; browser không cần CORS hoặc giữ API secrets. Catalog API/curated pipeline đã được kiểm tra end-to-end; seed có 15 published tools, 14 providers, 120 facts/30 evidence. Backend full 208 unit + 84 integration; frontend 10 tests, ESLint/typecheck/build và browser smoke pass. Tiếp theo 006.3 shared Discover components và Home nối API thật.
+**Trạng thái ngày 01/10/2026:** TASK-001..005 Done; TASK-006 In progress với 006.1 Catalog boundary, 006.2 UI foundation và 006.3 Home discovery đã Done. Home dùng Catalog API thật cho 8 categories và 6 tools đầu theo tên, có search/category URLs, skeleton, empty/error/retry, responsive ToolCard và vi/en; browser không giữ API secrets hoặc fallback mock. Seed có 15 published tools, 14 providers, 120 facts/30 evidence. Backend full 208 unit + 84 integration; frontend 13 tests, ESLint/typecheck/build và seeded browser smoke pass. Tiếp theo 006.4 Explorer URL/data orchestration.
 
 ## Vấn đề và người dùng
 
@@ -153,7 +153,7 @@ docker compose down --volumes
 
 Không có runtime fake provider. Unit/CI inject SDK client response tại boundary của adapter; workflow CI không đặt `GEMINI_API_KEY` và loại marker `live`. Gemini key, OIDC secrets và session secret chỉ tồn tại ở server environment, không dùng biến `NEXT_PUBLIC_*`.
 
-TASK-002 đã Done ngày 28/09/2026; TASK-003 Done ngày 29/09/2026; TASK-004 Done ngày 30/09/2026; TASK-005 Done ngày 01/10/2026. TASK-006 đang In progress: 006.1 Catalog boundary và 006.2 app shell/UI foundation đã Done, 006.3–006.7 còn Todo; TASK-016 cũng đủ dependency. Không dán key vào chat hoặc commit. Trạng thái và evidence đầy đủ nằm trong [backlog](docs/planning/TASKS.md).
+TASK-002 đã Done ngày 28/09/2026; TASK-003 Done ngày 29/09/2026; TASK-004 Done ngày 30/09/2026; TASK-005 Done ngày 01/10/2026. TASK-006 đang In progress: 006.1 Catalog boundary, 006.2 UI foundation và 006.3 Home discovery đã Done, 006.4–006.7 còn Todo; TASK-016 cũng đủ dependency. Không dán key vào chat hoặc commit. Trạng thái và evidence đầy đủ nằm trong [backlog](docs/planning/TASKS.md).
 
 ## Catalog API
 
@@ -184,6 +184,14 @@ Verification 006.1 ngày 01/10/2026: **6 behavior tests mới, full 8 web tests*
 App shell dùng toàn bộ semantic color tokens cho dark/light, lưu preference `Tối / Sáng / Theo hệ thống` và chạy bootstrap script trong `<head>` trước paint. Desktop từ 1280px dùng sidebar 216px; viewport nhỏ hơn dùng sticky header và Radix Dialog drawer có focus trap, Escape và focus return. Navigation chỉ liên kết route `/` đang hoạt động; current route có marker + `aria-current`. Skip link, header/nav/main landmarks, locale vi/en, hit target 44px, reduced-motion và forced-colors states nằm trong cùng shell. Lucide là icon family duy nhất, stroke 1.75; icon trang trí dùng `aria-hidden`.
 
 Verification 006.2 ngày 01/10/2026: **3 behavior tests mới, full 10 web tests**, ESLint, strict typecheck và production build pass. Browser smoke thật chứng minh stored light theme đã áp dụng ở frame đầu, System đổi dark→light theo OS, locale/theme dùng keyboard, drawer trap/restore focus và skip link focus main. Reflow 320px không overflow; breakpoint 1279px dùng header/drawer và 1280px dùng sidebar; drawer controls đều cao 44px. Axe desktop và mobile đóng drawer báo 0 violations/0 incomplete. Không gọi Catalog API, database, Gemini hoặc source URL.
+
+## Frontend Home discovery — TASK-006.3
+
+Home gọi `GET /api/catalog/categories` và `GET /api/catalog/tools?page=1&page_size=6&sort=name` qua typed same-origin client. Search trim input rồi điều hướng `/explorer?q=...`; category dùng `/explorer?category=...`. ToolCard chỉ đọc `ToolSummary`: monogram, description tối đa hai dòng, tối đa hai category + `+N`, pricing label theo verification status và detail URL bằng UUID. Không hiển thị popularity, rating, logo, giá tiền hoặc result count không có trong response.
+
+Categories và tools có loading, empty và sanitized error riêng; lỗi giữ `request_id` trong disclosure và retry đúng section, không fallback mock. `/explorer` và `/tools/[tool_id]` vẫn thuộc 006.4–006.6 nên 006.3 chỉ đảm bảo Home sinh đúng destination URL.
+
+Verification 006.3 ngày 01/10/2026: **3 behavior tests mới, full 13 web tests**, ESLint, strict typecheck và production build pass. Actual Chromium + PostgreSQL tạm đã migrate/import 202 records: 8 categories; 6 cards Adobe Firefly/ChatGPT/Claude/Cursor/ElevenLabs/Gemini; exact request `page=1&page_size=6&sort=name`; loading skeleton 6 cards; vi→en; search Unicode URL; upstream dừng hiện hai sanitized errors/request IDs, restart + retry phục hồi 8/6. Mobile 360px một cột, không overflow; axe 0 violations/0 incomplete. Temporary DB/services/build cache đã xóa; development catalog không đổi, không gọi Gemini hoặc source URLs.
 
 
 Kiểm thử TASK-004 trên Windows có cache cũ bị ACL có thể dùng các lệnh đã chạy sau (DATABASE_URL trỏ DB local; tests tạo rồi xóa database tạm, không seed vào database chính):
@@ -256,7 +264,7 @@ Dùng path --basetemp mới cho mỗi lần chạy vì pytest có thể xóa n�
 
 Verification 005.3: **19 unit + 16 DB/CLI cases mới**, full **204 unit + 68 integration tests**, Ruff/format/Mypy pass. CLI taxonomy thật báo 23 added, 0 updated, 0 unchanged trên DB local hiện chưa seed. Smoke riêng chạy SELECT-only role: unchanged re-import, old evidence/new value reject, evidence mới cho phép diff; exit 0/2/3/4 và fingerprint DB (timestamps/revisions/joins/history) giữ nguyên. DB/role/input smoke tạm đã xóa; không gọi Gemini. Windows pytest default temp có ACL deny: verification dùng --basetemp với path mới trong .cache; không xóa cache/user temp có sẵn.
 
-TASK-005.1..005.6 và TASK-005 tổng đã Done. Atomic import/revisions/history/search projection và curated seed 15 tools đã có. TASK-006 đang In progress: 006.1 Catalog boundary và 006.2 UI foundation Done, feature screens chưa triển khai; tiếp theo 006.3.
+TASK-005.1..005.6 và TASK-005 tổng đã Done. Atomic import/revisions/history/search projection và curated seed 15 tools đã có. TASK-006 đang In progress: 006.1 Catalog boundary, 006.2 UI foundation và 006.3 Home discovery Done; tiếp theo 006.4 Explorer URL/data orchestration.
 
 ## Atomic curated import — TASK-005.4
 

@@ -2,11 +2,18 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "./app-shell";
-import { HomeContent } from "./home-content";
+import { useLocale } from "./locale-context";
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/",
 }));
+
+function LocalizedHeading() {
+  const { locale } = useLocale();
+  return (
+    <h1>{locale === "vi" ? "Tìm công cụ AI. Xây stack phù hợp." : "Find AI tools. Build the right stack."}</h1>
+  );
+}
 
 let systemUsesLightTheme = false;
 const mediaListeners = new Set<(event: MediaQueryListEvent) => void>();
@@ -51,7 +58,7 @@ describe("AppShell preferences", () => {
   it("renders the active Vietnamese navigation and switches locale", () => {
     render(
       <AppShell>
-        <HomeContent />
+        <LocalizedHeading />
       </AppShell>,
     );
 
@@ -77,7 +84,7 @@ describe("AppShell preferences", () => {
   it("persists explicit themes and follows the OS only in system mode", () => {
     render(
       <AppShell>
-        <HomeContent />
+        <LocalizedHeading />
       </AppShell>,
     );
 
@@ -102,7 +109,7 @@ describe("AppShell preferences", () => {
   it("traps focus in the responsive drawer and restores it after Escape", async () => {
     render(
       <AppShell>
-        <HomeContent />
+        <LocalizedHeading />
       </AppShell>,
     );
 

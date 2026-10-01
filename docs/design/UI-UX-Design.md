@@ -1,6 +1,6 @@
 # AI Atlas — UI/UX Design Specification
 
-Ngày: 28/09/2026 · Phiên bản: 0.1 · Trạng thái: foundation shell đã scaffold trong TASK-002; feature screens và visual review chưa triển khai.
+Ngày: 01/10/2026 · Phiên bản: 0.2 · Trạng thái: foundation shell TASK-006.2 đã triển khai và browser-audit; Discover feature screens chưa triển khai.
 
 Tài liệu chuyển brief “Minimal Developer SaaS + AI-native Product + Data-rich Discovery Platform” thành quy tắc giao diện và hành vi cụ thể. Đối tượng ưu tiên là developers và sinh viên; thành công là người dùng tìm được tool, hiểu căn cứ của stack và quản lý được stack cá nhân.
 
@@ -10,7 +10,7 @@ Tài liệu chuyển brief “Minimal Developer SaaS + AI-native Product + Data-
 
 Đọc [AGENTS](../../AGENTS.md), [README](../../README.md), [PRD](../product/PRD.md), [User flows](../product/USER_FLOWS.md), [Architecture](../architecture/SYSTEM_ARCHITECTURE.md), [Data model](../architecture/DATA_MODEL.md), [API](../architecture/API_DESIGN.md) và [AI spec](../architecture/AI_RECOMMENDATION.md) trước khi code.
 
-Repository hiện có app shell tối thiểu, token hai theme, locale `vi/en`, home foundation và web health route; chưa có feature screens, catalog data hoặc mockup đã duyệt để audit trực quan. Các component/route còn lại dưới đây là thiết kế dự kiến. PRD/Accepted ADR và API contracts có ưu tiên cao hơn tài liệu này khi có xung đột; UI không tự mở rộng payload để phù hợp mockup.
+Repository hiện có app shell responsive, semantic tokens hai theme, dark/light/system pre-paint, locale `vi/en`, accessible drawer, home foundation, Catalog BFF boundary và web health route. Chưa có Explorer/tool detail/Builder/My Stacks hoặc mockup baseline đã duyệt; các feature component/route còn lại dưới đây vẫn là thiết kế dự kiến. PRD/Accepted ADR và API contracts có ưu tiên cao hơn tài liệu này khi có xung đột; UI không tự mở rộng payload để phù hợp mockup.
 
 ### 1.1. Quyết định thiết kế
 
@@ -272,7 +272,7 @@ Xóa stack cần dialog có title cụ thể, text “Stack sẽ bị xóa khỏ
 
 ## 7. Component inventory và behavior contracts
 
-Ưu tiên accessible primitives từ shadcn/ui và Lucide Icons theo brief, nhưng đây là dependency proposal, chưa được cài vì foundation shell TASK-002 chưa cần icon/primitives ngoài React. Kiểm tra phiên bản, license và compatibility trước feature screen đầu tiên cần chúng. Một icon set, stroke thống nhất; icons phụ decorative dùng aria-hidden. Không thêm component library thứ hai để làm một màn hình khác phong cách.
+Radix Dialog `1.1.23` và Lucide React `1.49.0` đã được pin ở TASK-006.2: Radix sở hữu focus trap/Escape/focus return của drawer; Lucide là icon family duy nhất, stroke 1.75 và icons phụ decorative dùng `aria-hidden`. Chỉ thêm primitive mới khi feature screen thật cần; không thêm component library thứ hai để làm màn hình khác phong cách.
 
 | Component dự kiến | Dùng ở đâu | States/contract |
 |---|---|---|
@@ -383,6 +383,6 @@ Component tests cho states và keyboard; integration cho URL/form binding; E2E b
 
 ### 11.2. Tình trạng và điểm còn mở
 
-Hiện hoàn thành **spec thiết kế** và foundation shell có interaction đổi locale được component-test. Chưa có Explorer/Builder/My Stacks, mock assets, visual regression screenshots hoặc browser accessibility audit. Contrast token có thể tính tĩnh; việc đó không chứng minh contrast của mọi trạng thái render, opacity hoặc overlay thực tế.
+Hiện hoàn thành **spec thiết kế**, Catalog BFF boundary và foundation shell: responsive sidebar/header/drawer, active route, locale `vi/en`, dark/light/system không flash sai theme, keyboard/focus contract và semantic tokens. Component tests cùng browser smoke đã kiểm tra 320px reflow, breakpoint 1279/1280, controls 44px, first-frame theme và axe desktop/mobile không có violation. Chưa có Explorer/tool detail/Builder/My Stacks, mock assets hoặc visual regression baseline.
 
-Cần chốt ở implementation: Auth0 Google Login UI theo ADR-007; font assets và dependencies cho feature components khi bắt đầu screen tương ứng. Foundation đã pin toolchain và component-test locale persistence; TASK-006/013/019 vẫn phải kiểm tra copy và state en/vi trong từng journey. Logo assets, featured/related sections và compact Explorer view chỉ bổ sung khi có dữ liệu hoặc yêu cầu rõ; không là blocker của MVP hiện tại. Mọi thay đổi fields/API phải cập nhật contract trước, không lách bằng hardcoded UI data.
+Cần chốt ở implementation: Auth0 Google Login UI theo ADR-007 và font assets khi feature screens cần. TASK-006.3–006.7, TASK-013 và TASK-019 vẫn phải kiểm tra copy/state en/vi trong từng journey; audit shell không thay chứng nhận accessibility cho các screens tương lai. Logo assets, featured/related sections và compact Explorer view chỉ bổ sung khi có dữ liệu hoặc yêu cầu rõ; không là blocker của MVP hiện tại. Mọi thay đổi fields/API phải cập nhật contract trước, không lách bằng hardcoded UI data.

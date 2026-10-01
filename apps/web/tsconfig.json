@@ -33,7 +33,9 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    ".cache/next-task0061-smoke-5cd6581e-4ca3-4d9e-be19-26a6cd8f2d02/types/**/*.ts",
+    ".cache/next-task0061-smoke-5cd6581e-4ca3-4d9e-be19-26a6cd8f2d02/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

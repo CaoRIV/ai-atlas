@@ -103,7 +103,7 @@ Dashboard đầu tiên chỉ cần số liệu aggregate: latency/error theo rou
 
 TASK-002 đã scaffold `apps/web`, `apps/api`, `infra/db/init`, scripts PowerShell, Compose và CI. Trên Windows khoảng 8GB RAM: frontend/backend chạy bằng host processes; chỉ PostgreSQL+pgvector chạy trong Docker Compose. Không containerize mọi service mặc định. `data/curated` và `evals` chỉ tạo ở các task sở hữu dữ liệu/evaluation tương ứng. Full Compose profile chỉ xem xét sau khi đo RAM.
 
-Toolchain pin Node.js 22, pnpm 12.6.0, Python 3.11 và lockfiles cho hai hệ sinh thái; bảng phiên bản và lệnh đã kiểm tra nằm trong [README](../../README.md). `.env.example` định nghĩa `DATABASE_URL`, OIDC fields, `SESSION_SECRET`, model/embedding identifiers, `GEMINI_API_KEY`, request timeout/output cap, `RUN_LIVE_AI_TESTS` và `AI_MONTHLY_BUDGET_USD`. Các biến secret không có prefix public của frontend.
+Toolchain pin Node.js 22, pnpm 12.6.0, Python 3.11 và lockfiles cho hai hệ sinh thái; bảng phiên bản và lệnh đã kiểm tra nằm trong [README](../../README.md). `.env.example` định nghĩa `DATABASE_URL`, server-only `API_BASE_URL`/`CATALOG_API_TIMEOUT_MS`, OIDC fields, `SESSION_SECRET`, model/embedding identifiers, `GEMINI_API_KEY`, request timeout/output cap, `RUN_LIVE_AI_TESTS` và `AI_MONTHLY_BUDGET_USD`. Các biến secret và FastAPI origin không có prefix public của frontend.
 
 Unit/CI dùng Gemini adapter với injected transport và synthetic response fixtures, không gọi provider hoặc cần API key. Không có fake provider runtime. Live smoke/eval là bước riêng được bật có chủ đích, ghi model/usage/tariff và phát sinh chi phí Gemini thật.
 

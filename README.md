@@ -4,7 +4,7 @@
 
 AI Atlas là nền tảng khám phá AI tools và xây dựng AI stack theo mục tiêu, thiết bị và ngân sách của người dùng. Sản phẩm kết nối một thư viện được biên tập với hệ thống đề xuất có căn cứ, giúp trả lời: có công cụ nào, công cụ nào phù hợp và chúng kết hợp thành quy trình như thế nào?
 
-**Trạng thái ngày 01/10/2026:** TASK-001..005 đã Done, gồm 005.1..005.6. Foundation có Next.js shell song ngữ, FastAPI, PostgreSQL + pgvector, Gemini adapter thật và CI không gọi dịch vụ trả phí. Catalog API và curated CLI đã được kiểm tra end-to-end trên DB tạm: dry-run/import 202 added, re-import 202 unchanged, transaction rollback và HTTP smoke pass. Seed có 15 published tools, 14 providers, 120 facts/30 evidence; 208 unit + 84 integration tests, Ruff/format/Mypy pass. Xem [hướng dẫn vận hành và output evidence](docs/operations/CURATED_CATALOG.md). Task tiếp theo là TASK-006 — Explorer UI nối API thật; UI này chưa triển khai.
+**Trạng thái ngày 01/10/2026:** TASK-001..005 Done; TASK-006 In progress với 006.1 frontend Catalog boundary đã Done. Next.js có typed Catalog client và ba same-origin allowlisted read routes tới FastAPI, giữ status/request ID, timeout fail-closed và không cần CORS. Catalog API/curated pipeline đã được kiểm tra end-to-end; seed có 15 published tools, 14 providers, 120 facts/30 evidence. Backend full 208 unit + 84 integration; frontend 8 tests, ESLint/typecheck/build và actual BFF→FastAPI smoke pass. Tiếp theo 006.2 app shell/UI foundation.
 
 ## Vấn đề và người dùng
 
@@ -103,10 +103,15 @@ Rollback yêu cầu target tường minh. Lệnh sau xóa toàn bộ schema do m
 uv run python apps/api/src/ai_atlas_api/migrations.py down --to 0
 ```
 
-Chạy API và web trong hai terminal:
+Chạy API và web trong hai terminal. `API_BASE_URL` là server-only origin của FastAPI; không đổi thành biến `NEXT_PUBLIC_*`:
 
 ```powershell
+# Terminal 1
 uv run uvicorn ai_atlas_api.main:app --app-dir apps/api/src --reload --port 8000
+
+# Terminal 2
+$env:API_BASE_URL = "http://127.0.0.1:8000"
+$env:CATALOG_API_TIMEOUT_MS = "10000"
 .\scripts\pnpm.ps1 --filter @ai-atlas/web dev
 ```
 
@@ -147,7 +152,7 @@ docker compose down --volumes
 
 Không có runtime fake provider. Unit/CI inject SDK client response tại boundary của adapter; workflow CI không đặt `GEMINI_API_KEY` và loại marker `live`. Gemini key, OIDC secrets và session secret chỉ tồn tại ở server environment, không dùng biến `NEXT_PUBLIC_*`.
 
-TASK-002 đã Done ngày 28/09/2026 sau clean setup/offline/DB/HTTP checks và billed live smoke. TASK-003 Done ngày 29/09/2026; TASK-004 Done ngày 30/09/2026; TASK-005 Done ngày 01/10/2026 sau curated import/API verification trên DB thật. TASK-006 là bước tiếp theo của Discover slice; TASK-016 cũng đủ dependency. Không dán key vào chat hoặc commit. Trạng thái và evidence đầy đủ nằm trong [backlog](docs/planning/TASKS.md).
+TASK-002 đã Done ngày 28/09/2026; TASK-003 Done ngày 29/09/2026; TASK-004 Done ngày 30/09/2026; TASK-005 Done ngày 01/10/2026. TASK-006 đang In progress: 006.1 frontend Catalog boundary đã Done, 006.2–006.7 còn Todo; TASK-016 cũng đủ dependency. Không dán key vào chat hoặc commit. Trạng thái và evidence đầy đủ nằm trong [backlog](docs/planning/TASKS.md).
 
 ## Catalog API
 
@@ -160,6 +165,19 @@ Sau khi apply migrations và khởi động API, xem OpenAPI tại `http://127.0
 Database chưa có curated seed thì list trả rỗng; category slug chưa tồn tại trả 422. TASK-005 cung cấp 8 categories và 15 tools có nguồn; import tường minh theo [operating guide](docs/operations/CURATED_CATALOG.md). Filter true/false chỉ nhận facts verified với evidence cùng revision còn hạn; detail hiển thị stale facts dưới trạng thái unverified. Query key lạ hoặc parameter lặp trả 422, draft/archived detail trả 404, DB chưa sẵn sàng trả 503. Chi tiết response và filters ở [API contract](docs/architecture/API_DESIGN.md).
 
 Review fixes TASK-004: model relation chỉ hiển thị khi model-use fact verified fresh và value true; fact verified false vẫn giữ nguồn nhưng không công bố model. HTTP error envelope giữ exception headers, gồm `Allow: GET` cho 405, cùng request ID. Hai regression cases, 49 unit tests, 46 integration tests và smoke HTTP thật đã pass tại TASK-004; evidence lịch sử trong backlog. Curated importer/seed đã hoàn tất ở TASK-005.
+
+## Frontend Catalog boundary — TASK-006.1
+
+Next.js cung cấp ba allowlisted same-origin read routes; browser không gọi FastAPI trực tiếp:
+
+- `GET /api/catalog/categories`
+- `GET /api/catalog/tools` — giữ nguyên query để FastAPI validate
+- `GET /api/catalog/tools/{tool_id}`
+
+Gateway chỉ đọc server-side `API_BASE_URL`, không dùng `NEXT_PUBLIC_*`, CORS, generic proxy hoặc direct database access. `CATALOG_API_TIMEOUT_MS` mặc định 10000 và chỉ nhận 1000–30000 ms. Response stream giữ HTTP status, safe headers và `X-Request-ID`; cache bị tắt. Upstream/config/timeout failure trả 503 `CATALOG_UNAVAILABLE` đã sanitize, không fallback mock. Browser client parse success/error envelopes bằng Zod trước khi UI sử dụng.
+
+Verification 006.1 ngày 01/10/2026: **6 behavior tests mới, full 8 web tests**, ESLint và strict typecheck pass; production build compile/type/static generation pass. Actual smoke dùng PostgreSQL tạm đã migrate/import 202 records, Uvicorn và Next dev thật: 8 categories, search ChatGPT total 1, detail HTTPS, invalid tools/category query giữ 422 + request ID, route ngoài allowlist 404, upstream dừng trả sanitized 503. Temporary DB/services/build cache đã xóa; development catalog không đổi, không gọi Gemini hoặc source URLs.
+
 
 Kiểm thử TASK-004 trên Windows có cache cũ bị ACL có thể dùng các lệnh đã chạy sau (DATABASE_URL trỏ DB local; tests tạo rồi xóa database tạm, không seed vào database chính):
 
@@ -231,7 +249,7 @@ Dùng path --basetemp mới cho mỗi lần chạy vì pytest có thể xóa n�
 
 Verification 005.3: **19 unit + 16 DB/CLI cases mới**, full **204 unit + 68 integration tests**, Ruff/format/Mypy pass. CLI taxonomy thật báo 23 added, 0 updated, 0 unchanged trên DB local hiện chưa seed. Smoke riêng chạy SELECT-only role: unchanged re-import, old evidence/new value reject, evidence mới cho phép diff; exit 0/2/3/4 và fingerprint DB (timestamps/revisions/joins/history) giữ nguyên. DB/role/input smoke tạm đã xóa; không gọi Gemini. Windows pytest default temp có ACL deny: verification dùng --basetemp với path mới trong .cache; không xóa cache/user temp có sẵn.
 
-TASK-005.1..005.6 và TASK-005 tổng đã Done. Atomic import/revisions/history/search projection và curated seed 15 tools đã có; verification đã hoàn tất tại 005.6, tiếp theo TASK-006. Chưa có frontend Explorer.
+TASK-005.1..005.6 và TASK-005 tổng đã Done. Atomic import/revisions/history/search projection và curated seed 15 tools đã có. TASK-006 đang In progress: 006.1 Catalog boundary Done, Explorer screens chưa triển khai; tiếp theo 006.2.
 
 ## Atomic curated import — TASK-005.4
 
@@ -262,7 +280,7 @@ $testTemp = Join-Path ".cache" ("pytest-import-" + [guid]::NewGuid().ToString("N
 
 Verification 005.4: **1 unit + 7 DB/import cases mới**, full **205 unit + 75 integration tests**, Ruff/format/Mypy pass. Runtime smoke ngoài pytest import taxonomy thật + synthetic temporary published tool: initial 29 added; unchanged re-import không update; content change 1 added/2 updated/26 unchanged, tool/fact revisions tăng đúng một, joins/search thay atomically, embedding bị xóa, evidence revisions [1,2] còn đủ; re-import giữ exact DB fingerprint; invalid FK exit 2 và không đổi transaction. Temporary DB/input đã xóa; configured development catalog không bị import, không fetch source hoặc gọi paid API.
 
-TASK-005.1..005.6 và TASK-005 tổng đã Done. Atomic importer và curated seed 15 tools đã có; verification đã hoàn tất tại 005.6, tiếp theo TASK-006. Chưa có historical restore command hoặc embedding rebuild.
+TASK-005.1..005.6 và TASK-005 tổng đã Done. Atomic importer và curated seed 15 tools đã có; TASK-006 đang In progress với 006.1 Done. Chưa có historical restore command hoặc embedding rebuild.
 
 ## Curated seed — TASK-005.5
 
@@ -283,7 +301,7 @@ if ($LASTEXITCODE -eq 0) {
 
 Verification 005.5: 3 seed acceptance tests; full **208 unit + 75 integration tests**, Ruff/format/Mypy pass. Temporary-DB smoke: dry-run/import đều 202 added; persisted 15 published tools, 14 providers, 30 evidence, 90 explicit unknown facts, 8 categories và 10 capabilities. Temporary DB đã xóa; development catalog không bị import, không gọi source URLs hoặc paid API.
 
-TASK-005.1..005.6 và TASK-005 tổng đã Done. Tiếp theo **TASK-006 — Explorer UI**.
+TASK-005.1..005.6 và TASK-005 tổng đã Done. TASK-006 đang In progress: 006.1 Catalog boundary Done; tiếp theo **006.2 — app shell/UI foundation**.
 
 ## Curated operating verification — TASK-005.6
 

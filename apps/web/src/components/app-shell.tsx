@@ -1,7 +1,7 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { House, Menu, Monitor, Moon, Sun, X } from "lucide-react";
+import { Compass, House, Menu, Monitor, Moon, Sun, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -43,6 +43,7 @@ const shellCopy = {
     drawerDescription: "Điều hướng chính và tùy chọn hiển thị của AI Atlas.",
     drawerTitle: "Điều hướng",
     home: "Trang chủ",
+    explorer: "Khám phá",
     locale: "Ngôn ngữ",
     menu: "Mở điều hướng",
     navigation: "Điều hướng chính",
@@ -62,6 +63,7 @@ const shellCopy = {
     drawerDescription: "AI Atlas primary navigation and display preferences.",
     drawerTitle: "Navigation",
     home: "Home",
+    explorer: "Explore",
     locale: "Language",
     menu: "Open navigation",
     navigation: "Primary navigation",
@@ -83,6 +85,7 @@ type ShellCopy = (typeof shellCopy)[Locale];
 function Navigation({ copy, onNavigate }: { copy: ShellCopy; onNavigate?: () => void }) {
   const pathname = usePathname();
   const isHome = pathname === "/";
+  const isExplorer = pathname === "/explorer";
 
   return (
     <nav aria-label={copy.navigation} className="shell-navigation">
@@ -95,6 +98,15 @@ function Navigation({ copy, onNavigate }: { copy: ShellCopy; onNavigate?: () => 
       >
         <House aria-hidden="true" size={19} strokeWidth={1.75} />
         <span>{copy.home}</span>
+      </Link>
+      <Link
+        aria-current={isExplorer ? "page" : undefined}
+        className="navigation-link"
+        href="/explorer"
+        onClick={onNavigate}
+      >
+        <Compass aria-hidden="true" size={19} strokeWidth={1.75} />
+        <span>{copy.explorer}</span>
       </Link>
     </nav>
   );

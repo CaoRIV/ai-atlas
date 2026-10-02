@@ -2,7 +2,7 @@
 
 import { AlertCircle, ArrowRight, Inbox, Search, X } from "lucide-react";
 import Link from "next/link";
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, useId } from "react";
 
 import type { Locale } from "./locale-context";
 import type { ToolSummary } from "../lib/catalog/types";
@@ -10,10 +10,13 @@ import type { ToolSummary } from "../lib/catalog/types";
 type SearchFieldProps = {
   label: string;
   locale: Locale;
+  onCompositionChange?: (isComposing: boolean) => void;
   onSubmit: (query: string) => void;
+  onValueChange: (value: string) => void;
   pending?: boolean;
   placeholder: string;
   submitLabel: string;
+  value: string;
 };
 
 const pricingCopy = {
@@ -51,13 +54,15 @@ const componentCopy = {
 export function SearchField({
   label,
   locale,
+  onCompositionChange,
   onSubmit,
+  onValueChange,
   pending = false,
   placeholder,
   submitLabel,
+  value,
 }: SearchFieldProps) {
   const inputId = useId();
-  const [value, setValue] = useState("");
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -74,7 +79,9 @@ export function SearchField({
             autoComplete="off"
             id={inputId}
             name="q"
-            onChange={(event) => setValue(event.target.value)}
+            onChange={(event) => onValueChange(event.target.value)}
+            onCompositionEnd={() => onCompositionChange?.(false)}
+            onCompositionStart={() => onCompositionChange?.(true)}
             placeholder={placeholder}
             type="search"
             value={value}
@@ -83,7 +90,7 @@ export function SearchField({
             <button
               aria-label={componentCopy[locale].clearSearch}
               className="search-clear"
-              onClick={() => setValue("")}
+              onClick={() => onValueChange("")}
               type="button"
             >
               <X aria-hidden="true" size={18} strokeWidth={1.75} />

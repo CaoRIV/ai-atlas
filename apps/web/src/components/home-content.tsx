@@ -67,6 +67,7 @@ export function HomeContent() {
   const [toolsState, setToolsState] = useState<LoadState<ToolSummary[]>>({ status: "loading" });
   const [categoriesAttempt, setCategoriesAttempt] = useState(0);
   const [toolsAttempt, setToolsAttempt] = useState(0);
+  const [searchValue, setSearchValue] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -121,8 +122,10 @@ export function HomeContent() {
           label={text.searchLabel}
           locale={locale}
           onSubmit={handleSearch}
+          onValueChange={setSearchValue}
           placeholder={text.searchPlaceholder}
           submitLabel={text.searchSubmit}
+          value={searchValue}
         />
         <p className="foundation-note">{text.note}</p>
       </section>

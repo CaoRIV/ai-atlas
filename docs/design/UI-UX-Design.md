@@ -201,6 +201,8 @@ Price model labels: free “Miễn phí”, freemium “Có gói miễn phí”,
 
 **Nghiệm thu:** q/filters trong URL, keyboard chọn/xóa được; không match có reset rõ; 422 query sai có thông báo và cách reset; HTTP lỗi có retry giữ query; skeleton cùng kích thước grid tránh nhảy layout.
 
+Implementation 006.4 (02/10/2026): URL/query lifecycle, IME-safe search, sort, pagination, history restore và abort/sequence guard đã triển khai trên Catalog API thật; filter rail/drawer/chips cùng refresh/422 recovery vẫn thuộc 006.5.
+
 ### 6.3. Tool detail — `/tools/[tool_id]`
 
 Header: breadcrumb về Explorer, monogram, name/provider, description, categories và nút “Mở website chính thức”. Link official HTTPS có external icon và thông báo mở tab mới. Lưu query Explorer trong navigation state để quay lại đúng filters; nếu vào direct link thì về Explorer mặc định.

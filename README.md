@@ -4,7 +4,7 @@
 
 AI Atlas là nền tảng khám phá AI tools và xây dựng AI stack theo mục tiêu, thiết bị và ngân sách của người dùng. Sản phẩm kết nối một thư viện được biên tập với hệ thống đề xuất có căn cứ, giúp trả lời: có công cụ nào, công cụ nào phù hợp và chúng kết hợp thành quy trình như thế nào?
 
-**Trạng thái ngày 02/10/2026:** TASK-001..005 Done; TASK-006 In progress với 006.1 Catalog boundary, 006.2 UI foundation, 006.3 Home discovery và 006.4 Explorer orchestration đã Done. Home và Explorer dùng Catalog API thật; Explorer lấy q/category/platform/pricing/API/open-source/sort/page từ URL, search IME-safe, sort/pagination, back/forward và chặn response cũ. Seed có 15 published tools, 14 providers, 120 facts/30 evidence. Backend full 208 unit + 84 integration; frontend 19 tests, ESLint/typecheck/build và seeded browser smoke pass. Tiếp theo 006.5 filter interactions và responsive results.
+**Trạng thái ngày 03/10/2026:** TASK-001..005 Done; TASK-006 In progress với 006.1 Catalog boundary, 006.2 UI foundation, 006.3 Home discovery, 006.4 Explorer orchestration và 006.5 filter interactions/responsive results đã Done. Home và Explorer dùng Catalog API thật; Explorer lấy q/category/platform/pricing/API/open-source/sort/page từ URL, có IME-safe search, filter rail/draft drawer, chips/count, sort/pagination, back/forward, old-grid refresh và recovery. Seed có 15 published tools, 14 providers, 120 facts/30 evidence. Backend full 208 unit + 84 integration; frontend 25 tests, ESLint/typecheck/build và seeded browser smoke pass. Tiếp theo 006.6 tool detail với provenance.
 
 ## Vấn đề và người dùng
 
@@ -201,6 +201,13 @@ Mỗi URL/retry có request key riêng. Effect hủy request cũ bằng `AbortCo
 
 Verification 006.4 ngày 02/10/2026: **6 behavior cases mới, full 19 web tests**, ESLint, strict typecheck và production build pass. Actual Chromium + PostgreSQL seeded 15 tools: default 15 results, exact request `sort=name&page=1&page_size=20`; search ChatGPT debounce dùng replace và trả 1 result; Enter sang Claude ngay; back phục hồi URL/input/result ChatGPT; direct category/API URL áp state; relevance chỉ hiện khi có q. Mobile 360px không overflow, empty state thật và axe 0 violations/0 incomplete. Abort khi đổi URL được quan sát và regression test chứng minh response cũ không render. Services/build cache tạm đã xóa; không gọi Gemini hoặc source URLs.
 
+## Frontend Explorer interactions — TASK-006.5
+
+Desktop dùng filter rail áp dụng ngay; mobile/tablet dùng Radix draft drawer với Apply/Cancel/Escape, reset draft và focus return. Applied chips có accessible name theo keyword, xóa từng filter bằng keyboard; count trên nút không tính q/sort/page. Category multi-select dùng OR trong nhóm; các nhóm dùng AND. Chọn “Tất cả” xóa boolean parameter thay vì gửi false; filter false vẫn là lựa chọn riêng. Grid responsive 3/2/1 cột, pagination giữ total/page từ API và không có horizontal overflow ở 360px.
+
+Refresh giữ grid cũ với aria-busy=true và live status cho tới khi request mới hoàn tất. Initial load dùng skeleton; empty state xóa cả search/filter; lỗi 422 có reset về Explorer mặc định; HTTP error giữ query cùng request ID và retry đúng request. Không có client-side filtering hoặc preview count từ dữ liệu cũ.
+
+Verification 006.5 ngày 03/10/2026: **6 behavior cases mới, full 25 web tests**, ESLint, strict typecheck và production build pass. Seeded FastAPI/Next/Chromium smoke dùng 15 tools: desktop filter category trả 2 results; refresh category + platform giữ 2 cards cũ trong lúc aria-busy, rồi empty; invalid category 422 reset về 15 results. Mobile 360px chứng minh Cancel bỏ draft, Apply commit một lần, focus trả nút “Bộ lọc”, chip/count đúng, 2 cards và không overflow. Axe mobile/desktop báo 0 violations/0 incomplete; settled browser không có console/page errors. Không gọi Gemini hoặc source URLs.
 
 Kiểm thử TASK-004 trên Windows có cache cũ bị ACL có thể dùng các lệnh đã chạy sau (DATABASE_URL trỏ DB local; tests tạo rồi xóa database tạm, không seed vào database chính):
 

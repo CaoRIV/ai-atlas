@@ -201,7 +201,7 @@ Price model labels: free “Miễn phí”, freemium “Có gói miễn phí”,
 
 **Nghiệm thu:** q/filters trong URL, keyboard chọn/xóa được; không match có reset rõ; 422 query sai có thông báo và cách reset; HTTP lỗi có retry giữ query; skeleton cùng kích thước grid tránh nhảy layout.
 
-Implementation 006.4 (02/10/2026): URL/query lifecycle, IME-safe search, sort, pagination, history restore và abort/sequence guard đã triển khai trên Catalog API thật; filter rail/drawer/chips cùng refresh/422 recovery vẫn thuộc 006.5.
+Implementation 006.4–006.5 (02–03/10/2026): URL/query lifecycle, IME-safe search, sort, pagination, history restore, abort/sequence guard, desktop filter rail, mobile draft drawer, applied chips/count, responsive grid và refresh/422/HTTP recovery đã triển khai trên Catalog API thật. Behavior tests phủ filter semantics, drawer lifecycle/focus, chips và recovery; seeded browser smoke 360px/desktop cùng axe đều pass.
 
 ### 6.3. Tool detail — `/tools/[tool_id]`
 

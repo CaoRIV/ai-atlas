@@ -913,6 +913,232 @@ h1 {
   text-align: center;
 }
 
+
+.applied-filters {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.filter-chips button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-control);
+  border-radius: 999px;
+  background: var(--bg-selected);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.filter-chips button:hover {
+  border-color: var(--text-accent);
+  color: var(--text-accent);
+}
+
+.text-button {
+  min-height: 44px;
+  padding: 8px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--text-accent);
+  cursor: pointer;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.text-button:hover {
+  color: var(--text-primary);
+}
+
+.explorer-workspace {
+  display: grid;
+  min-width: 0;
+  gap: 20px;
+}
+
+.explorer-filter-controls {
+  min-width: 0;
+}
+
+.filter-rail {
+  display: none;
+}
+
+.mobile-filter-trigger {
+  gap: 8px;
+}
+
+.filter-drawer-content {
+  display: flex;
+  position: fixed;
+  z-index: 50;
+  inset: 0 0 0 auto;
+  width: min(420px, calc(100vw - 16px));
+  height: 100dvh;
+  flex-direction: column;
+  gap: 24px;
+  padding: 16px;
+  overflow-y: auto;
+  border-left: 1px solid var(--border-subtle);
+  background: var(--bg-overlay);
+  box-shadow: var(--overlay-shadow);
+  animation: filter-drawer-in 180ms ease-out;
+}
+
+.filter-fields {
+  display: grid;
+  gap: 24px;
+}
+
+.filter-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.filter-group legend,
+.filter-select > span {
+  padding: 0;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.filter-hint {
+  display: block;
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+}
+
+.filter-checkboxes {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.filter-checkbox {
+  display: grid;
+  min-height: 44px;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.filter-checkbox:hover {
+  background: var(--bg-subtle);
+}
+
+.filter-checkbox input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--action-primary);
+}
+
+.filter-select {
+  display: grid;
+  gap: 8px;
+}
+
+.filter-select select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 36px 0 12px;
+  border: 1px solid var(--border-control);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.filter-select select:hover {
+  border-color: var(--text-accent);
+}
+
+.filter-inline-status,
+.filter-inline-error p {
+  margin: 12px 0 0;
+  color: var(--text-secondary);
+}
+
+.filter-inline-error {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--status-error-bg);
+  color: var(--status-error-text);
+}
+
+.filter-inline-error p {
+  color: inherit;
+}
+
+.filter-inline-error .button {
+  margin-top: 10px;
+}
+
+.filter-request-id {
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+}
+
+.filter-drawer-actions {
+  display: flex;
+  position: sticky;
+  bottom: -16px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding: 16px 0;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-overlay);
+}
+
+.filter-drawer-actions > div {
+  display: flex;
+  gap: 8px;
+}
+
+.results-surface {
+  display: grid;
+  min-width: 0;
+  gap: 20px;
+}
+
+.results-refresh {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--status-info-bg);
+  color: var(--status-info-text);
+}
+
+@keyframes filter-drawer-in {
+  from { transform: translateX(16px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
 @keyframes skeleton-pulse {
   0%, 100% { opacity: 0.55; }
   50% { opacity: 1; }
@@ -935,6 +1161,35 @@ h1 {
 
   .tool-card {
     padding: 16px;
+  }
+
+  .applied-filters {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .applied-filters > .text-button {
+    width: fit-content;
+  }
+
+  .filter-chips button {
+    max-width: 100%;
+    text-align: left;
+  }
+
+  .filter-drawer-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .filter-drawer-actions > div {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .filter-drawer-actions .button {
+    width: 100%;
   }
 
   .explorer-toolbar {
@@ -1018,6 +1273,48 @@ h1 {
 
   .main-content {
     padding: 32px;
+  }
+
+  .explorer-workspace {
+    grid-template-columns: 224px minmax(0, 1fr);
+    align-items: start;
+    gap: 24px;
+  }
+
+  .explorer-filter-controls {
+    position: sticky;
+    top: 32px;
+  }
+
+  .filter-rail {
+    display: grid;
+    gap: 20px;
+    padding: 16px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    background: var(--bg-surface);
+  }
+
+  .filter-rail-heading {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .filter-rail-heading h2 {
+    margin: 0;
+    font-size: 18px;
+    line-height: 26px;
+  }
+
+  .filter-rail-heading .text-button {
+    font-size: 12px;
+  }
+
+  .mobile-filter-trigger {
+    display: none;
   }
 }
 

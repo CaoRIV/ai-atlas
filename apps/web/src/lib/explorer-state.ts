@@ -117,7 +117,7 @@ export function withExplorerSearch(state: ExplorerState, value: string): Explore
   };
 }
 
-type ExplorerFilters = Pick<
+export type ExplorerFilters = Pick<
   ExplorerState,
   "apiAvailable" | "categories" | "openSource" | "platform" | "pricingModel"
 >;

@@ -6,6 +6,7 @@ import { type FormEvent, useId } from "react";
 
 import type { Locale } from "./locale-context";
 import type { ToolSummary } from "../lib/catalog/types";
+import { explorerReturnHref } from "../lib/tool-navigation";
 
 type SearchFieldProps = {
   label: string;
@@ -105,7 +106,7 @@ export function SearchField({
   );
 }
 
-export function ToolCard({ locale, tool }: { locale: Locale; tool: ToolSummary }) {
+export function ToolCard({ locale, tool, returnTo }: { locale: Locale; tool: ToolSummary; returnTo?: string }) {
   const copy = componentCopy[locale];
   const categories = tool.categories.slice(0, 2);
   const extraCategoryCount = Math.max(0, tool.categories.length - categories.length);
@@ -149,7 +150,7 @@ export function ToolCard({ locale, tool }: { locale: Locale; tool: ToolSummary }
         <Link
           aria-label={`${copy.detail} ${tool.name}`}
           className="tool-detail-link"
-          href={`/tools/${encodeURIComponent(tool.id)}`}
+          href={`/tools/${encodeURIComponent(tool.id)}${returnTo ? `?${new URLSearchParams({ from: explorerReturnHref(returnTo) })}` : ""}`}
         >
           <span>{copy.detail}</span>
           <ArrowRight aria-hidden="true" size={17} strokeWidth={1.75} />

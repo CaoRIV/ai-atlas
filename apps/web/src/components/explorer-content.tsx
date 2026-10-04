@@ -336,7 +336,7 @@ export function ExplorerContent() {
             ) : null}
             {displayedData && displayedData.data.length > 0 ? (
               <div className="tool-grid">
-                {displayedData.data.map((tool) => <ToolCard key={tool.id} locale={locale} tool={tool} />)}
+                {displayedData.data.map((tool) => <ToolCard key={tool.id} locale={locale} tool={tool} returnTo={buildExplorerHref(appliedState)} />)}
               </div>
             ) : null}
           </div>

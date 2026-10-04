@@ -215,6 +215,8 @@ Nguồn dài nằm trong disclosure “Xem nguồn” ngay dưới fact, dùng �
 
 MVP không có nút Save tool. Có link phụ “Quản lý stack của tôi” để user thêm từ editor; không hứa đã chọn sẵn tool khi chưa có UI state đó. Archived/absent trả 404 public: “Không tìm thấy công cụ này” + về Explorer, không expose draft record.
 
+Implementation 006.6 (04/10/2026): tool detail đã nối Catalog API thật qua server-only transport và typed retry client. Route trả public HTTP404 cho absent/archived/invalid IDs; card Explorer mang `from` query được allowlist/canonicalize để giữ q/filters/page, direct link về /explorer. FactRow/EvidenceDisclosure có effective status và dates UTC, nguồn stale vẫn hiển thị; structured null khác conditions=[]. Copy vi/en, desktop summary rail và mobile single-column đã browser-smoke trên seed thật, 360/320px không overflow. Không thêm link My Stacks khi route chưa triển khai. Full 33 web tests/lint/typecheck/build pass; hardening tổng thể thuộc 006.7.
+
 ### 6.4. AI Stack Builder — `/builder`
 
 **Bố cục:** H1 “Tạo AI Stack” → mô tả ngắn → objective form → optional constraints → submit → result dưới form. Desktop có rail “Cách dùng” ngắn trước generation; khi có kết quả thay bằng summary constraints. Không dùng chat bubbles, transcript hoặc sidebar lịch sử chưa được API hỗ trợ.

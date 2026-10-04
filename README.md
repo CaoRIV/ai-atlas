@@ -4,7 +4,7 @@
 
 AI Atlas là nền tảng khám phá AI tools và xây dựng AI stack theo mục tiêu, thiết bị và ngân sách của người dùng. Sản phẩm kết nối một thư viện được biên tập với hệ thống đề xuất có căn cứ, giúp trả lời: có công cụ nào, công cụ nào phù hợp và chúng kết hợp thành quy trình như thế nào?
 
-**Trạng thái ngày 03/10/2026:** TASK-001..005 Done; TASK-006 In progress với 006.1 Catalog boundary, 006.2 UI foundation, 006.3 Home discovery, 006.4 Explorer orchestration và 006.5 filter interactions/responsive results đã Done. Home và Explorer dùng Catalog API thật; Explorer lấy q/category/platform/pricing/API/open-source/sort/page từ URL, có IME-safe search, filter rail/draft drawer, chips/count, sort/pagination, back/forward, old-grid refresh và recovery. Seed có 15 published tools, 14 providers, 120 facts/30 evidence. Backend full 208 unit + 84 integration; frontend 25 tests, ESLint/typecheck/build và seeded browser smoke pass. Tiếp theo 006.6 tool detail với provenance.
+**Trạng thái ngày 04/10/2026:** TASK-001..005 Done; TASK-006 In progress với 006.1–006.6 Done. Home/Explorer/tool detail dùng Catalog API thật; detail có facts/evidence/ngày kiểm tra, unknown/stale, official links và public 404, quay lại đúng Explorer filters. Frontend 33 tests, ESLint/typecheck/build và seeded browser smoke pass; backend gần nhất 208 unit + 84 integration từ TASK-005.6 (không chạy lại trong thay đổi frontend này). Tiếp theo 006.7 — Discover hardening và verification.
 
 ## Vấn đề và người dùng
 
@@ -310,7 +310,7 @@ $testTemp = Join-Path ".cache" ("pytest-import-" + [guid]::NewGuid().ToString("N
 
 Verification 005.4: **1 unit + 7 DB/import cases mới**, full **205 unit + 75 integration tests**, Ruff/format/Mypy pass. Runtime smoke ngoài pytest import taxonomy thật + synthetic temporary published tool: initial 29 added; unchanged re-import không update; content change 1 added/2 updated/26 unchanged, tool/fact revisions tăng đúng một, joins/search thay atomically, embedding bị xóa, evidence revisions [1,2] còn đủ; re-import giữ exact DB fingerprint; invalid FK exit 2 và không đổi transaction. Temporary DB/input đã xóa; configured development catalog không bị import, không fetch source hoặc gọi paid API.
 
-TASK-005.1..005.6 và TASK-005 tổng đã Done. Atomic importer và curated seed 15 tools đã có; TASK-006 đang In progress với 006.1 Done. Chưa có historical restore command hoặc embedding rebuild.
+TASK-005.1..005.6 và TASK-005 tổng đã Done. Atomic importer và curated seed 15 tools đã có; TASK-006 đang In progress với 006.1–006.6 Done. Chưa có historical restore command hoặc embedding rebuild.
 
 ## Curated seed — TASK-005.5
 
@@ -331,8 +331,32 @@ if ($LASTEXITCODE -eq 0) {
 
 Verification 005.5: 3 seed acceptance tests; full **208 unit + 75 integration tests**, Ruff/format/Mypy pass. Temporary-DB smoke: dry-run/import đều 202 added; persisted 15 published tools, 14 providers, 30 evidence, 90 explicit unknown facts, 8 categories và 10 capabilities. Temporary DB đã xóa; development catalog không bị import, không gọi source URLs hoặc paid API.
 
-TASK-005.1..005.6 và TASK-005 tổng đã Done. TASK-006 đang In progress: 006.1 Catalog boundary Done; tiếp theo **006.2 — app shell/UI foundation**.
+TASK-005.1..005.6 và TASK-005 tổng đã Done. TASK-006 đang In progress: 006.1–006.6 Done; tiếp theo **006.7 — Discover hardening và verification**.
 
 ## Curated operating verification — TASK-005.6
 
 [Hướng dẫn Windows, commands và output evidence](docs/operations/CURATED_CATALOG.md) bao gồm dry-run/import/re-import, API smoke, xử lý freshness/import failure. Regression tại `apps/api/tests/integration/test_curated_pipeline.py` tự tạo/xóa DB tạm và chạy Uvicorn/HTTP thật. 9 cases mới pass; full 208 unit + 84 integration tests, Ruff/format/Mypy pass ngày 01/10/2026. Không cần Gemini key, không fetch URL, không auto-refresh evidence hoặc historical restore. Development catalog không được tự seed.
+
+## Tool detail — TASK-006.6
+
+`/tools/[tool_id]` hiển thị grouped facts, pricing/conditions, sources và summary rail. Nguồn có domain, checked_at/expires_at theo UTC; null/unknown và unverified/stale không trở thành verified false. `conditions: []` khác null. Official link chỉ HTTPS, mở tab mới với noopener/noreferrer. Page initial dùng server-only Catalog transport, retry dùng BFF; absent/archived/invalid ID trả public 404. Không có Save/Builder controls hoặc mock fallback.
+
+Sau khi import seed và chạy API theo operating guide, đặt `API_BASE_URL` trong terminal chạy web. Ví dụ smoke thủ công từ repo root:
+
+```powershell
+$env:API_BASE_URL = 'http://127.0.0.1:8000'
+.\scripts\pnpm.ps1 --filter @ai-atlas/web dev
+```
+
+Mở `/explorer?q=ChatGPT&pricing_model=unknown`, chọn chi tiết, mở nguồn bằng Enter, đổi vi/en rồi quay lại Explorer: q/filter phải giữ nguyên. Direct `/tools/<UUID>` quay về Explorer mặc định; `/tools/not-a-uuid` hoặc UUID archived hiển thị 404, không có metadata private. Kiểm tra ở desktop và 360px. Không cần mở source URL hoặc gọi Gemini để kiểm UI.
+
+Checks từ repo root:
+
+```powershell
+.\scripts\pnpm.ps1 --filter @ai-atlas/web lint
+.\scripts\pnpm.ps1 --filter @ai-atlas/web typecheck
+.\scripts\pnpm.ps1 --filter @ai-atlas/web test
+.\scripts\pnpm.ps1 --filter @ai-atlas/web build
+```
+
+Ngày 04/10/2026: full 33 tests, lint/typecheck/build pass. Actual smoke với PostgreSQL tạm + 202 imported records, Uvicorn8006, Next production3006 và Chromium: HTTP200/404, return URL, en/vi, sources, keyboard và 360/320px reflow pass; screenshots đã kiểm trực quan. DB/services tạm đã dọn. Kiểm thử toàn diện Discover/a11y ở 006.7; automated Journey A E2E ở TASK-007.

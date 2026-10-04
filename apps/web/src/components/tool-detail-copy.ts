@@ -1,0 +1,56 @@
+export const detailCopy = {
+  vi: {
+    back: "Quay lại Explorer", official: "Mở website chính thức", newTab: "mở tab mới",
+    missing: "Không tìm thấy công cụ này", missingBody: "Công cụ không tồn tại hoặc hiện không được công bố.",
+    error: "Chưa thể tải thông tin công cụ lúc này.", retry: "Thử lại", request: "Mã yêu cầu",
+    loading: "Đang tải thông tin công cụ…", unknown: "Chưa có dữ liệu", verified: "Đã xác minh",
+    unverified: "Cần xác minh lại", yes: "Có hỗ trợ", no: "Không hỗ trợ",
+    yesUnverified: "Có — chưa xác minh", noUnverified: "Không — chưa xác minh",
+    sources: "Xem nguồn", checked: "Kiểm tra", expires: "Hết hiệu lực", unavailableLink: "Liên kết không khả dụng",
+    capabilities: "Khả năng", pricing: "Giá và điều kiện", integrations: "Tích hợp",
+    technical: "Thông tin kỹ thuật", summary: "Thông tin nhanh", reviewed: "Ngày review record",
+    reviewNote: "Ngày review record không đảm bảo mọi fact còn hiệu lực. Xem nguồn và ngày kiểm tra tại từng thông tin.",
+    empty: "Chưa có thông tin được công bố cho nhóm này.", models: "Models được sử dụng",
+    pricingNote: "Giá tối thiểu theo tháng không phải tổng chi phí sử dụng thực tế.",
+    noSources: "Chưa có nguồn cho thông tin này.",
+    noConditions: "Không có điều kiện được ghi", noItems: "Không có mục được ghi",
+  },
+  en: {
+    back: "Back to Explorer", official: "Open official website", newTab: "opens in a new tab",
+    missing: "Tool not found", missingBody: "This tool does not exist or is not currently published.",
+    error: "Tool information is currently unavailable.", retry: "Retry", request: "Request ID",
+    loading: "Loading tool information…", unknown: "No data yet", verified: "Verified",
+    unverified: "Needs verification", yes: "Supported", no: "Not supported",
+    yesUnverified: "Yes — unverified", noUnverified: "No — unverified",
+    sources: "View sources", checked: "Checked", expires: "Expires", unavailableLink: "Link unavailable",
+    capabilities: "Capabilities", pricing: "Pricing and conditions", integrations: "Integrations",
+    technical: "Technical information", summary: "At a glance", reviewed: "Record review date",
+    reviewNote: "The record review date does not guarantee every fact is current. Check each fact’s sources and dates.",
+    empty: "No published information for this group yet.", models: "Models used",
+    pricingNote: "The monthly minimum is not your total usage cost.", noSources: "No sources for this fact yet.",
+    noConditions: "No recorded conditions", noItems: "No recorded items",
+  },
+} as const;
+
+export const factLabels: Record<string, [string, string]> = {
+  identity: ["Thông tin công cụ", "Tool identity"], pricing: ["Giá", "Pricing"],
+  platforms: ["Nền tảng", "Platforms"], api_available: ["API", "API"],
+  open_source: ["Mã nguồn mở", "Open source"], deployment_modes: ["Triển khai", "Deployment"],
+  offline_supported: ["Hoạt động offline", "Offline support"], min_ram_gb: ["RAM tối thiểu (GB)", "Minimum RAM (GB)"],
+  model: ["Hình thức giá", "Pricing model"], currency: ["Tiền tệ", "Currency"],
+  monthly_min: ["Mức tối thiểu mỗi tháng", "Monthly minimum"], billing_basis: ["Cơ sở tính phí", "Billing basis"],
+  usage_limits: ["Giới hạn sử dụng", "Usage limits"], free_tier: ["Gói miễn phí", "Free tier"],
+  status: ["Trạng thái", "Status"], license: ["Giấy phép", "License"],
+  target_name: ["Công cụ đích", "Target tool"], mechanism: ["Cơ chế", "Mechanism"],
+  conditions: ["Điều kiện", "Conditions"], name: ["Tên", "Name"], description: ["Mô tả", "Description"],
+  official_url: ["Website chính thức", "Official website"],
+};
+
+export const enumLabels: Record<string, [string, string]> = {
+  free: ["Miễn phí", "Free"], freemium: ["Có gói miễn phí", "Free tier available"],
+  paid: ["Trả phí", "Paid"], usage_based: ["Theo mức dùng", "Usage based"],
+  contact: ["Liên hệ", "Contact"], unknown: ["Chưa có dữ liệu", "No data yet"],
+  cloud: ["Cloud", "Cloud"], local: ["Local", "Local"], web: ["Web", "Web"],
+  windows: ["Windows", "Windows"], macos: ["macOS", "macOS"], linux: ["Linux", "Linux"],
+  ios: ["iOS", "iOS"], android: ["Android", "Android"],
+};

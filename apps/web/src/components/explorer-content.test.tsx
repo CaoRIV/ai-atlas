@@ -68,9 +68,9 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
-function explorerTree() {
+function explorerTree(locale: "vi" | "en" = "vi") {
   return (
-    <LocaleContext.Provider value={{ locale: "vi", setLocale: vi.fn() }}>
+    <LocaleContext.Provider value={{ locale, setLocale: vi.fn() }}>
       <ExplorerContent />
     </LocaleContext.Provider>
   );
@@ -91,6 +91,40 @@ afterEach(() => {
 });
 
 describe("Explorer orchestration", () => {
+  it("keeps URL, applied filters, pagination and an open drawer draft when locale changes", async () => {
+    navigation.paramsText = "q=chat&category=coding-development&sort=updated&page=2";
+    vi.mocked(getTools).mockResolvedValue(toolsResponse("Alpha", 2, 25));
+    const view = render(explorerTree());
+    await screen.findByText("Alpha");
+    fireEvent.click(screen.getByRole("button", { name: "Bộ lọc (1)" }));
+    const dialog = await screen.findByRole("dialog", { name: "Bộ lọc" });
+    fireEvent.click(within(dialog).getByRole("checkbox", { name: "Research & Learning" }));
+    fireEvent.change(within(dialog).getByLabelText("Khả dụng API"), { target: { value: "false" } });
+
+    view.rerender(explorerTree("en"));
+    const translated = screen.getByRole("dialog", { name: "Filters" });
+    expect(within(translated).getByRole("checkbox", { name: "Research & Learning" })).toBeChecked();
+    expect(within(translated).getByRole("checkbox", { name: "Coding & Development" })).toBeChecked();
+    expect(within(translated).getByLabelText("API available")).toHaveValue("false");
+    expect(navigation.paramsText).toBe("q=chat&category=coding-development&sort=updated&page=2");
+    expect(navigation.push).not.toHaveBeenCalled();
+    expect(getTools).toHaveBeenCalledTimes(1);
+    fireEvent.click(within(translated).getByRole("button", { name: "Apply" }));
+    expect(navigation.push).toHaveBeenCalledWith("/explorer?q=chat&category=coding-development%2Cresearch-learning&api_available=false&sort=updated");
+  });
+
+  it("translates errors and request IDs without discarding the query or refetching", async () => {
+    navigation.paramsText = "q=chat&sort=updated&page=2";
+    vi.mocked(getTools).mockRejectedValue(new CatalogClientError({ status: 503, code: "CATALOG_UNAVAILABLE", requestId: "retained-request" }));
+    const view = render(explorerTree());
+    await screen.findByRole("alert");
+    view.rerender(explorerTree("en"));
+    expect(screen.getByRole("alert")).toHaveTextContent("Results are unavailable right now.");
+    expect(screen.getByRole("alert")).toHaveTextContent("retained-request");
+    expect(screen.getByLabelText("Search by name or task")).toHaveValue("chat");
+    expect(navigation.push).not.toHaveBeenCalled();
+    expect(getTools).toHaveBeenCalledTimes(1);
+  });
   it("loads URL-derived filters and resets page for explicit sort and pagination actions", async () => {
     navigation.paramsText =
       "q=chat&category=chatting-assistants,ai-agents&platform=web&pricing_model=free&api_available=false&open_source=true&sort=updated&page=2";

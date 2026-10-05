@@ -1,6 +1,6 @@
 # AI Atlas — UI/UX Design Specification
 
-Ngày: 01/10/2026 · Phiên bản: 0.3 · Trạng thái: foundation shell TASK-006.2 và Home discovery TASK-006.3 đã triển khai/browser-audit; Explorer/tool detail chưa triển khai.
+Ngày: 05/10/2026 · Phiên bản: 0.4 · Trạng thái: Discover Home/Explorer/tool detail và hardening TASK-006.1–006.7 đã triển khai và kiểm trên Catalog API thật; automated Journey A E2E thuộc TASK-007.
 
 Tài liệu chuyển brief “Minimal Developer SaaS + AI-native Product + Data-rich Discovery Platform” thành quy tắc giao diện và hành vi cụ thể. Đối tượng ưu tiên là developers và sinh viên; thành công là người dùng tìm được tool, hiểu căn cứ của stack và quản lý được stack cá nhân.
 
@@ -217,6 +217,8 @@ MVP không có nút Save tool. Có link phụ “Quản lý stack của tôi” 
 
 Implementation 006.6 (04/10/2026): tool detail đã nối Catalog API thật qua server-only transport và typed retry client. Route trả public HTTP404 cho absent/archived/invalid IDs; card Explorer mang `from` query được allowlist/canonicalize để giữ q/filters/page, direct link về /explorer. FactRow/EvidenceDisclosure có effective status và dates UTC, nguồn stale vẫn hiển thị; structured null khác conditions=[]. Copy vi/en, desktop summary rail và mobile single-column đã browser-smoke trên seed thật, 360/320px không overflow. Không thêm link My Stacks khi route chưa triển khai. Full 33 web tests/lint/typecheck/build pass; hardening tổng thể thuộc 006.7.
 
+Hardening 006.7 (05/10/2026): drawer chỉ scroll fields, header/actions nằm ngoài vùng scroll để focus không bị che. Đổi locale giữ URL/filter/page và draft đang mở. Đã kiểm vi/en, dark/light, 320/360/768/1024/1366/1920px; full 35 web tests và browser audits pass. [Verification guide](../operations/DISCOVER_VERIFICATION.md) ghi commands, 3 axe results cần manual review và giới hạn kiểm chứng accessibility.
+
 ### 6.4. AI Stack Builder — `/builder`
 
 **Bố cục:** H1 “Tạo AI Stack” → mô tả ngắn → objective form → optional constraints → submit → result dưới form. Desktop có rail “Cách dùng” ngắn trước generation; khi có kết quả thay bằng summary constraints. Không dùng chat bubbles, transcript hoặc sidebar lịch sử chưa được API hỗ trợ.
@@ -389,4 +391,4 @@ Component tests cho states và keyboard; integration cho URL/form binding; E2E b
 
 Hiện hoàn thành **spec thiết kế**, Catalog BFF boundary, foundation shell và Home discovery API thật. Home đã browser-smoke 8 categories/6 ToolSummary, search/category URLs, loading/error/retry, vi/en, 360px reflow và axe 0 violations/0 incomplete; không fake popularity/logo/rating/price. Chưa có Explorer/tool detail/Builder/My Stacks, mock assets hoặc visual regression baseline.
 
-Cần chốt ở implementation: Auth0 Google Login UI theo ADR-007 và font assets khi feature screens cần. TASK-006.4–006.7, TASK-013 và TASK-019 vẫn phải kiểm tra copy/state en/vi trong từng journey; Home audit không thay chứng nhận accessibility cho các screens tương lai. Logo assets, featured/related sections và compact Explorer view chỉ bổ sung khi có dữ liệu hoặc yêu cầu rõ; không là blocker của MVP hiện tại. Mọi thay đổi fields/API phải cập nhật contract trước, không lách bằng hardcoded UI data.
+Cần chốt ở implementation: Auth0 Google Login UI theo ADR-007 và font assets khi feature screens cần. TASK-013 và TASK-019 vẫn phải kiểm tra copy/state en/vi trong từng journey; Home audit không thay chứng nhận accessibility cho các screens tương lai. Logo assets, featured/related sections và compact Explorer view chỉ bổ sung khi có dữ liệu hoặc yêu cầu rõ; không là blocker của MVP hiện tại. Mọi thay đổi fields/API phải cập nhật contract trước, không lách bằng hardcoded UI data.

@@ -4,7 +4,7 @@
 
 AI Atlas là nền tảng khám phá AI tools và xây dựng AI stack theo mục tiêu, thiết bị và ngân sách của người dùng. Sản phẩm kết nối một thư viện được biên tập với hệ thống đề xuất có căn cứ, giúp trả lời: có công cụ nào, công cụ nào phù hợp và chúng kết hợp thành quy trình như thế nào?
 
-**Trạng thái ngày 04/10/2026:** TASK-001..005 Done; TASK-006 In progress với 006.1–006.6 Done. Home/Explorer/tool detail dùng Catalog API thật; detail có facts/evidence/ngày kiểm tra, unknown/stale, official links và public 404, quay lại đúng Explorer filters. Frontend 33 tests, ESLint/typecheck/build và seeded browser smoke pass; backend gần nhất 208 unit + 84 integration từ TASK-005.6 (không chạy lại trong thay đổi frontend này). Tiếp theo 006.7 — Discover hardening và verification.
+**Trạng thái ngày 05/10/2026:** TASK-001..006 Done. Home/Explorer/tool detail dùng Catalog API thật; Discover hardening đã hoàn tất. Frontend 35 tests, ESLint/typecheck/build pass; 72 matrix + 7 state axe scans không có violations, 3 state results đã review thủ công. Xem [commands, evidence và giới hạn](docs/operations/DISCOVER_VERIFICATION.md). Backend gần nhất 208 unit + 84 integration từ TASK-005.6 (không chạy lại cho thay đổi frontend này). Tiếp theo TASK-007 — automated E2E Journey A.
 
 ## Vấn đề và người dùng
 
@@ -153,7 +153,7 @@ docker compose down --volumes
 
 Không có runtime fake provider. Unit/CI inject SDK client response tại boundary của adapter; workflow CI không đặt `GEMINI_API_KEY` và loại marker `live`. Gemini key, OIDC secrets và session secret chỉ tồn tại ở server environment, không dùng biến `NEXT_PUBLIC_*`.
 
-TASK-002 đã Done ngày 28/09/2026; TASK-003 Done ngày 29/09/2026; TASK-004 Done ngày 30/09/2026; TASK-005 Done ngày 01/10/2026. TASK-006 đang In progress: 006.1 Catalog boundary, 006.2 UI foundation, 006.3 Home discovery và 006.4 Explorer orchestration đã Done; 006.5–006.7 còn Todo. TASK-016 cũng đủ dependency. Không dán key vào chat hoặc commit. Trạng thái và evidence đầy đủ nằm trong [backlog](docs/planning/TASKS.md).
+TASK-001..006 đã Done; TASK-006 hoàn tất ngày 05/10/2026. TASK-007 là bước tiếp theo trong Discover slice; TASK-016 cũng đủ dependency. Không dán key vào chat hoặc commit. Trạng thái và evidence đầy đủ nằm trong [backlog](docs/planning/TASKS.md).
 
 ## Catalog API
 
@@ -279,7 +279,7 @@ Dùng path --basetemp mới cho mỗi lần chạy vì pytest có thể xóa n�
 
 Verification 005.3: **19 unit + 16 DB/CLI cases mới**, full **204 unit + 68 integration tests**, Ruff/format/Mypy pass. CLI taxonomy thật báo 23 added, 0 updated, 0 unchanged trên DB local hiện chưa seed. Smoke riêng chạy SELECT-only role: unchanged re-import, old evidence/new value reject, evidence mới cho phép diff; exit 0/2/3/4 và fingerprint DB (timestamps/revisions/joins/history) giữ nguyên. DB/role/input smoke tạm đã xóa; không gọi Gemini. Windows pytest default temp có ACL deny: verification dùng --basetemp với path mới trong .cache; không xóa cache/user temp có sẵn.
 
-TASK-005.1..005.6 và TASK-005 tổng đã Done. Atomic import/revisions/history/search projection và curated seed 15 tools đã có. TASK-006 đang In progress: 006.1 Catalog boundary, 006.2 UI foundation, 006.3 Home discovery và 006.4 Explorer orchestration Done; tiếp theo 006.5 filter interactions và responsive results.
+TASK-005 và TASK-006 đã Done. Atomic importer, curated seed 15 tools và Discover UI đã có; tiếp theo TASK-007 — automated E2E Journey A. Chưa có historical restore command hoặc embedding rebuild.
 
 ## Atomic curated import — TASK-005.4
 
@@ -310,7 +310,7 @@ $testTemp = Join-Path ".cache" ("pytest-import-" + [guid]::NewGuid().ToString("N
 
 Verification 005.4: **1 unit + 7 DB/import cases mới**, full **205 unit + 75 integration tests**, Ruff/format/Mypy pass. Runtime smoke ngoài pytest import taxonomy thật + synthetic temporary published tool: initial 29 added; unchanged re-import không update; content change 1 added/2 updated/26 unchanged, tool/fact revisions tăng đúng một, joins/search thay atomically, embedding bị xóa, evidence revisions [1,2] còn đủ; re-import giữ exact DB fingerprint; invalid FK exit 2 và không đổi transaction. Temporary DB/input đã xóa; configured development catalog không bị import, không fetch source hoặc gọi paid API.
 
-TASK-005.1..005.6 và TASK-005 tổng đã Done. Atomic importer và curated seed 15 tools đã có; TASK-006 đang In progress với 006.1–006.6 Done. Chưa có historical restore command hoặc embedding rebuild.
+TASK-005 và TASK-006 đã Done. Atomic importer, curated seed 15 tools và Discover UI đã có; tiếp theo TASK-007 — automated E2E Journey A. Chưa có historical restore command hoặc embedding rebuild.
 
 ## Curated seed — TASK-005.5
 
@@ -331,7 +331,7 @@ if ($LASTEXITCODE -eq 0) {
 
 Verification 005.5: 3 seed acceptance tests; full **208 unit + 75 integration tests**, Ruff/format/Mypy pass. Temporary-DB smoke: dry-run/import đều 202 added; persisted 15 published tools, 14 providers, 30 evidence, 90 explicit unknown facts, 8 categories và 10 capabilities. Temporary DB đã xóa; development catalog không bị import, không gọi source URLs hoặc paid API.
 
-TASK-005.1..005.6 và TASK-005 tổng đã Done. TASK-006 đang In progress: 006.1–006.6 Done; tiếp theo **006.7 — Discover hardening và verification**.
+TASK-005 và TASK-006 đã Done. Atomic importer, curated seed 15 tools và Discover UI đã có; tiếp theo TASK-007 — automated E2E Journey A. Chưa có historical restore command hoặc embedding rebuild.
 
 ## Curated operating verification — TASK-005.6
 
@@ -360,3 +360,9 @@ Checks từ repo root:
 ```
 
 Ngày 04/10/2026: full 33 tests, lint/typecheck/build pass. Actual smoke với PostgreSQL tạm + 202 imported records, Uvicorn8006, Next production3006 và Chromium: HTTP200/404, return URL, en/vi, sources, keyboard và 360/320px reflow pass; screenshots đã kiểm trực quan. DB/services tạm đã dọn. Kiểm thử toàn diện Discover/a11y ở 006.7; automated Journey A E2E ở TASK-007.
+
+## Discover hardening — TASK-006.7
+
+Ngày 05/10/2026: sửa footer che keyboard focus trong mobile filter drawer; locale switch giữ URL/filter/page/draft và error state. Full 35 web tests, lint/typecheck/build pass. Seeded browser smoke và 79 axe scans không có violations; 3 state results cần manual review đã được kiểm, không phải chứng nhận WCAG.
+
+[Operating guide](docs/operations/DISCOVER_VERIFICATION.md) có commands Windows, evidence và giới hạn. Hai scripts local opt-in: [matrix audit](scripts/audit-discover.cjs) và [drawer focus regression](scripts/check-discover-focus.cjs). TASK-006 hoàn tất; TASK-007 sở hữu automated Journey A E2E/CI.

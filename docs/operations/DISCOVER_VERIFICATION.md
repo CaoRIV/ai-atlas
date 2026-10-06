@@ -1,6 +1,6 @@
-# Discover — verification và bàn giao TASK-006.7
+# Discover — verification và E2E operation
 
-Phạm vi: Home → Explorer → tool detail hiện có, hai locale `vi/en`, hai theme `dark/light`, keyboard và responsive states. Không thêm feature, không gọi Gemini hoặc fetch source URLs. Automated Journey A E2E/CI thuộc TASK-007; các scripts dưới đây là audit local opt-in, cần API và curated seed thật.
+Phạm vi: Home → Explorer → tool detail hiện có, hai locale `vi/en`, hai theme `dark/light`, keyboard và responsive states. Không thêm feature, không gọi Gemini hoặc fetch source URLs. TASK-007.1 đã tự động hóa real-stack foundation; Journey A đầy đủ, negative paths và CI gate thuộc 007.2–007.4.
 
 ## Lỗi đã sửa
 
@@ -8,7 +8,23 @@ Footer sticky của filter drawer che control đang focus: trong viewport 360×8
 
 Drawer hiện giữ header/actions bên ngoài vùng scroll, chỉ fields scroll với `min-height: 0` và padding cho focus ring. Regression browser kiểm 40 lần Tab/Shift+Tab, hit-test control đang focus và trả focus về trigger bằng Escape, tại 320/360/768/1024px trong cả vi/en. Bản trước fail tại pricing; bản sau pass 8 combinations.
 
-## Commands
+## Automated real-stack foundation — TASK-007.1
+
+Yêu cầu: Node/pnpm theo workspace, Python environment đã sync và PostgreSQL local. Role trong admin URL phải có quyền tạo/xóa database; không dùng production credentials. Runner không đọc Gemini key và tests không mở official source URL.
+
+```powershell
+# Khi Compose dùng cổng host 55432:
+$env:E2E_DATABASE_ADMIN_URL = 'postgresql://ai_atlas:ai_atlas_dev@127.0.0.1:55432/ai_atlas'
+.\scripts\pnpm.ps1 test:e2e:discover
+```
+
+Nếu PostgreSQL ở `127.0.0.1:5432` với credentials mặc định thì không cần đặt admin URL. Optional overrides: `E2E_API_PORT`, `E2E_WEB_PORT`, `E2E_BASE_URL`, `E2E_STARTUP_TIMEOUT_MS`, `E2E_ARTIFACT_ROOT`. Không đặt ports thì runner chọn hai loopback ports riêng; custom `E2E_BASE_URL` phải khớp web origin.
+
+Runner tạo database `ai_atlas_e2e_<random>`, migrate, import curated seed và từ chối chạy nếu summary khác `202 records/15 tools`. Sau đó runner build Next production vào `.next-e2e`, start FastAPI/Next, chờ `/health/ready` và web readiness với timeout rồi chạy Chromium. `SIGINT`, `SIGTERM`, startup/test failure và success đều đi qua teardown: đóng process tree, xóa database tạm và build output. Success xóa run directory; failure giữ `api.log`, `web.log`, Playwright trace/screenshot tại `.cache/discover-e2e/<run-id>/`. Artifacts bị gitignore và không chứa raw prompt/token vì flow không gọi AI.
+
+Evidence 06/10/2026, Windows/Chromium: smoke real-stack pass `1` test với auto ports và với `E2E_BASE_URL`; seed đúng `202 records/15 tools`. Sau success không còn database `ai_atlas_e2e_%`, `.next-e2e` hay run artifact. Forced API bind failure trả exit khác `0`, giữ `api.log`, vẫn xóa database/build output; artifact kiểm chứng đã được dọn. Frontend ESLint, web + E2E strict typecheck, 35 Vitest cases và isolated production build pass; backend Ruff check/format, mypy và 208 unit cases pass. Smoke xác nhận API/BFF/UI và detail-link contract; không thay thế Journey A cases của 007.2/007.3.
+
+## Manual TASK-006.7 commands
 
 Từ repo root, chạy riêng từng command và kiểm exit code:
 

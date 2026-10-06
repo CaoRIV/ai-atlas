@@ -1,6 +1,7 @@
 # JavaScript
 node_modules/
 .next/
+.next-e2e/
 coverage/
 *.tsbuildinfo
 next-env.d.ts

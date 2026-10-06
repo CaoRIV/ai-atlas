@@ -4,7 +4,7 @@
 
 AI Atlas là nền tảng khám phá AI tools và xây dựng AI stack theo mục tiêu, thiết bị và ngân sách của người dùng. Sản phẩm kết nối một thư viện được biên tập với hệ thống đề xuất có căn cứ, giúp trả lời: có công cụ nào, công cụ nào phù hợp và chúng kết hợp thành quy trình như thế nào?
 
-**Trạng thái ngày 05/10/2026:** TASK-001..006 Done. Home/Explorer/tool detail dùng Catalog API thật; Discover hardening đã hoàn tất. Frontend 35 tests, ESLint/typecheck/build pass; 72 matrix + 7 state axe scans không có violations, 3 state results đã review thủ công. Xem [commands, evidence và giới hạn](docs/operations/DISCOVER_VERIFICATION.md). Backend gần nhất 208 unit + 84 integration từ TASK-005.6 (không chạy lại cho thay đổi frontend này). Tiếp theo TASK-007 — automated E2E Journey A.
+**Trạng thái ngày 06/10/2026:** TASK-001..006 Done; TASK-007 đang triển khai, 007.1 Done. Home/Explorer/tool detail dùng Catalog API thật. Frontend gần nhất 35 tests, ESLint/typecheck/build pass; 72 matrix + 7 state axe scans không có violations, 3 state results đã review thủ công. Playwright foundation dựng PostgreSQL tạm đã migrate/import đúng 202 records, FastAPI, Next production và Chromium bằng một command, rồi dọn database/process/build output khi pass. Xem [commands, evidence và giới hạn](docs/operations/DISCOVER_VERIFICATION.md). Backend gần nhất 208 unit + 84 integration từ TASK-005.6.
 
 ## Vấn đề và người dùng
 
@@ -365,4 +365,19 @@ Ngày 04/10/2026: full 33 tests, lint/typecheck/build pass. Actual smoke với P
 
 Ngày 05/10/2026: sửa footer che keyboard focus trong mobile filter drawer; locale switch giữ URL/filter/page/draft và error state. Full 35 web tests, lint/typecheck/build pass. Seeded browser smoke và 79 axe scans không có violations; 3 state results cần manual review đã được kiểm, không phải chứng nhận WCAG.
 
-[Operating guide](docs/operations/DISCOVER_VERIFICATION.md) có commands Windows, evidence và giới hạn. Hai scripts local opt-in: [matrix audit](scripts/audit-discover.cjs) và [drawer focus regression](scripts/check-discover-focus.cjs). TASK-006 hoàn tất; TASK-007 sở hữu automated Journey A E2E/CI.
+[Operating guide](docs/operations/DISCOVER_VERIFICATION.md) có commands Windows, evidence và giới hạn. Hai scripts local opt-in: [matrix audit](scripts/audit-discover.cjs) và [drawer focus regression](scripts/check-discover-focus.cjs). TASK-006 hoàn tất; TASK-007.1 đã cung cấp automated real-stack E2E foundation cho Journey A.
+
+## Discover E2E foundation — TASK-007.1
+
+Yêu cầu: Node/pnpm theo workspace, Python environment đã sync và PostgreSQL local cho phép role cấu hình tạo/xóa database. Runner không dùng development database, Gemini key hay network đến official sources. Với Compose mặc định đang chạy trên cổng `55432`:
+
+```powershell
+$env:E2E_DATABASE_ADMIN_URL = 'postgresql://ai_atlas:ai_atlas_dev@127.0.0.1:55432/ai_atlas'
+.\scripts\pnpm.ps1 test:e2e:discover
+```
+
+Nếu PostgreSQL ở `127.0.0.1:5432` với credentials mặc định thì bỏ biến trên. Có thể đặt `E2E_API_PORT`, `E2E_WEB_PORT`, `E2E_BASE_URL` và `E2E_STARTUP_TIMEOUT_MS`; mặc định runner tự chọn hai cổng loopback chưa dùng. `E2E_BASE_URL` phải trỏ đúng origin web đã chọn.
+
+Mỗi lượt tạo database `ai_atlas_e2e_<random>`, chạy migrations, import `data/curated/taxonomy.json` + `data/curated/tools.json`, xác nhận summary `202 records/15 tools`, build/start Next production và start FastAPI rồi mới chạy Chromium. Readiness có timeout; process, database và `.next-e2e` luôn được dọn. Run pass xóa thư mục run; run fail giữ logs, Playwright trace/screenshot tại `.cache/discover-e2e/<run-id>/` để điều tra. Không commit artifacts.
+
+Evidence 06/10/2026 trên Windows: command trên pass `1` Playwright smoke test qua API/BFF/UI thật với default port allocation và với `E2E_BASE_URL` cấu hình; seed đúng `202 records/15 tools`. Success hậu kiểm có `0` database `ai_atlas_e2e_%`, không còn `.next-e2e`, artifact directory rỗng. Forced API startup failure trả exit khác `0`, giữ `api.log`, đồng thời vẫn xóa database/build output; artifact kiểm chứng đã được dọn. Frontend lint/E2E typecheck/35 tests/production build và backend Ruff/format/mypy/208 unit tests pass. Đây là foundation smoke; full Journey A/negative paths và CI gate thuộc 007.2–007.4.

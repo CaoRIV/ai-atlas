@@ -8,10 +8,15 @@
   },
   "scripts": {
     "dev:web": "pnpm --filter @ai-atlas/web dev",
-    "lint": "pnpm --recursive --if-present lint",
-    "typecheck": "pnpm --recursive --if-present typecheck",
+    "lint": "pnpm --recursive --if-present lint && node --check scripts/run-discover-e2e.mjs",
+    "typecheck": "pnpm --recursive --if-present typecheck && tsc --project tsconfig.e2e.json",
     "test": "pnpm --recursive --if-present test",
-    "build": "pnpm --recursive --if-present build"
+    "build": "pnpm --recursive --if-present build",
+    "test:e2e:discover": "node scripts/run-discover-e2e.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "@types/node": "22.20.4",
+    "typescript": "6.0.3"
   }
 }
-

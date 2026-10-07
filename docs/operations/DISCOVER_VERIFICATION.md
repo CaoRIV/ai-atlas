@@ -1,6 +1,6 @@
 # Discover — verification và E2E operation
 
-Phạm vi: Home → Explorer → tool detail hiện có, hai locale `vi/en`, hai theme `dark/light`, keyboard và responsive states. Không thêm feature, không gọi Gemini hoặc fetch source URLs. TASK-007.1 đã tự động hóa real-stack foundation; Journey A đầy đủ, negative paths và CI gate thuộc 007.2–007.4.
+Phạm vi: Home → Explorer → tool detail hiện có, hai locale `vi/en`, hai theme `dark/light`, keyboard và responsive states. Không thêm feature, không gọi Gemini hoặc fetch source URLs. TASK-007.1 đã tự động hóa real-stack foundation; TASK-007.2 đã tự động hóa Journey A happy path vi/en. Negative/publication paths, race recovery và CI gate thuộc 007.3–007.4.
 
 ## Lỗi đã sửa
 
@@ -23,6 +23,14 @@ Nếu PostgreSQL ở `127.0.0.1:5432` với credentials mặc định thì khôn
 Runner tạo database `ai_atlas_e2e_<random>`, migrate, import curated seed và từ chối chạy nếu summary khác `202 records/15 tools`. Sau đó runner build Next production vào `.next-e2e`, start FastAPI/Next, chờ `/health/ready` và web readiness với timeout rồi chạy Chromium. `SIGINT`, `SIGTERM`, startup/test failure và success đều đi qua teardown: đóng process tree, xóa database tạm và build output. Success xóa run directory; failure giữ `api.log`, `web.log`, Playwright trace/screenshot tại `.cache/discover-e2e/<run-id>/`. Artifacts bị gitignore và không chứa raw prompt/token vì flow không gọi AI.
 
 Evidence 06/10/2026, Windows/Chromium: smoke real-stack pass `1` test với auto ports và với `E2E_BASE_URL`; seed đúng `202 records/15 tools`. Sau success không còn database `ai_atlas_e2e_%`, `.next-e2e` hay run artifact. Forced API bind failure trả exit khác `0`, giữ `api.log`, vẫn xóa database/build output; artifact kiểm chứng đã được dọn. Frontend ESLint, web + E2E strict typecheck, 35 Vitest cases và isolated production build pass; backend Ruff check/format, mypy và 208 unit cases pass. Smoke xác nhận API/BFF/UI và detail-link contract; không thay thế Journey A cases của 007.2/007.3.
+
+## Journey A happy path — TASK-007.2
+
+Cùng command `test:e2e:discover` chạy thêm `e2e/discover-journey.spec.ts`. Mỗi locale bắt đầu từ Home, tìm ChatGPT, chọn category `chatting-assistants` và pricing `unknown`, rồi kiểm canonical URL `/explorer?q=ChatGPT&category=chatting-assistants&pricing_model=unknown` cùng đúng một result. Detail phải có OpenAI, capability/status, unknown pricing và evidence checked/expires; Back phải giữ search, filters, effective sort và page 1.
+
+Official link phải là `https://chatgpt.com/`, `_blank`, `noopener noreferrer`; test cài route interception trước click, xác nhận popup URL, nội dung cục bộ và `window.opener === null`. Không có request nào đi ra official host. Test dùng role/name; chỉ dùng URL và attribute cho contract mà accessibility tree không biểu diễn.
+
+Evidence 07/10/2026, Windows/Chromium: real stack với curated seed `202 records/15 tools` pass `3` cases (`1` foundation, Journey A vi + en) trong `19.4s`; isolated production build, root ESLint/strict typecheck và 35 Vitest cases pass. Runner đã dọn database, services, `.next-e2e` và success artifacts. Browser smoke riêng ở 1366×900 đã kiểm trực quan Home, filtered Explorer, expanded evidence detail và back-state; English count defect `1 results` được sửa thành `1 result`. Backend không đổi nên không chạy lại suite backend của TASK-005.6.
 
 ## Manual TASK-006.7 commands
 
@@ -93,4 +101,4 @@ Matrix 72 scans không có incomplete. Screenshots desktop/mobile đã kiểm tr
 2. Tab tới skip link, search, sort, filters/chips/pagination; mở drawer, đi hết controls theo hai chiều và Escape. Focus không bị footer/header che.
 3. Kiểm empty (`api_available=false` với seed hiện tại), 422 (category không tồn tại), 404 và API unavailable/retry; không dùng fallback catalog giả.
 4. Chạy matrix audit, đọc cả violations và incomplete; kiểm screenshots, reduced motion và forced colors. Không tự approve visual changes chỉ vì tests xanh.
-5. Chạy frontend checks. TASK-007 tiếp tục xây automated E2E Journey A và error-path coverage trong CI.
+5. Chạy frontend checks và `test:e2e:discover`. TASK-007.3 tiếp tục negative/publication paths cùng race recovery; CI gate thuộc 007.4.

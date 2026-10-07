@@ -75,7 +75,7 @@ const copy = {
     requestId: "Request ID",
     resetQueryFilters: "Reset search and filters",
     resultsHeading: "Results",
-    results: (total: number) => total + " results",
+    results: (total: number) => total + (total === 1 ? " result" : " results"),
     retry: "Try again",
     searchLabel: "Search by name or task",
     searchPlaceholder: "Tool name or task…",

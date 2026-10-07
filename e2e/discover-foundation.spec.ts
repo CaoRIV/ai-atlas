@@ -29,7 +29,7 @@ test("serves the curated Discover baseline through the real stack", async ({ pag
   const navigation = await page.goto("/explorer");
   expect(navigation?.status()).toBe(200);
   await expect(page.getByRole("main")).toBeVisible();
-  const detailLinks = page.locator('main a[href^="/tools/"]');
+  const detailLinks = page.getByRole("link", { name: /^Xem chi tiết / });
   await expect(detailLinks).toHaveCount(body.pagination.total);
   await expect(detailLinks.first()).toHaveAttribute(
     "href",

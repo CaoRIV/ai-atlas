@@ -1,0 +1,7 @@
+{
+  "id": "fe4708a4-a5e9-4b3e-89dd-9457ad63aabb",
+  "slug": "e2e-private-archived-sentinel",
+  "name": "E2E Private Archived Sentinel",
+  "description": "Private description must never reach public Catalog responses.",
+  "official_url": "https://archived-sentinel.invalid/private"
+}

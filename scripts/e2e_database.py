@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import sys
 from collections.abc import Sequence
+from pathlib import Path
 from urllib.parse import urlparse
 
 import psycopg
@@ -47,14 +49,41 @@ def _drop(admin_url: str, database_name: str) -> None:
         )
 
 
+def _seed_fixtures(admin_url: str, database_name: str) -> None:
+    fixture_path = Path(__file__).resolve().parents[1] / "e2e/fixtures/archived-tool.json"
+    fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+    # Override the admin URL's database; fixtures must never touch the development catalog.
+    with psycopg.connect(admin_url, dbname=database_name, connect_timeout=5) as connection:
+        connection.execute(
+            "INSERT INTO tools "
+            "(id, slug, name, description, official_url, publication_status, search_vector) "
+            "VALUES (%s, %s, %s, %s, %s, 'archived', to_tsvector('simple', %s))",
+            (
+                fixture["id"],
+                fixture["slug"],
+                fixture["name"],
+                fixture["description"],
+                fixture["official_url"],
+                fixture["name"],
+            ),
+        )
+        stored = connection.execute(
+            "SELECT publication_status FROM tools WHERE id = %s", (fixture["id"],)
+        ).fetchone()
+        if stored != ("archived",):
+            raise ValueError("E2E_ARCHIVED_FIXTURE_MISSING")
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Manage an isolated local Discover E2E database.")
-    parser.add_argument("action", choices=("create", "drop"))
+    parser.add_argument("action", choices=("create", "drop", "seed-fixtures"))
     arguments = parser.parse_args(argv)
     try:
         admin_url, database_name = _configuration()
         if arguments.action == "create":
             _create(admin_url, database_name)
+        elif arguments.action == "seed-fixtures":
+            _seed_fixtures(admin_url, database_name)
         else:
             _drop(admin_url, database_name)
     except ValueError as error:
@@ -63,7 +92,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     except (psycopg.Error, OSError):
         print("E2E_DATABASE_UNAVAILABLE", file=sys.stderr)
         return 3
-    print(f"{arguments.action}d isolated Discover E2E database")
+    print(f"{arguments.action}: isolated Discover E2E database ready")
     return 0
 
 

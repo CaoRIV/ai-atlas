@@ -328,6 +328,10 @@ async function main() {
     throw new Error("Curated E2E seed did not import the expected 202 records.");
   }
 
+  await runCommand(python, ["scripts/e2e_database.py", "seed-fixtures"], databaseEnvironment, {
+    capture: true,
+  });
+
   const build = pnpmInvocation(["--filter", "@ai-atlas/web", "build"]);
   await runCommand(build.command, build.arguments, webEnvironment);
 
@@ -376,7 +380,7 @@ async function main() {
     }),
   );
   runSucceeded = true;
-  console.log("Discover E2E foundation passed; temporary services and database will be removed.");
+  console.log("Discover E2E passed; temporary services and database will be removed.");
 }
 
 const signalExitCode = { SIGINT: 130, SIGTERM: 143 };

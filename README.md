@@ -4,7 +4,7 @@
 
 AI Atlas là nền tảng khám phá AI tools và xây dựng AI stack theo mục tiêu, thiết bị và ngân sách của người dùng. Sản phẩm kết nối một thư viện được biên tập với hệ thống đề xuất có căn cứ, giúp trả lời: có công cụ nào, công cụ nào phù hợp và chúng kết hợp thành quy trình như thế nào?
 
-**Trạng thái ngày 07/10/2026:** TASK-001..006 Done; TASK-007 đang triển khai, 007.1–007.2 Done. Home/Explorer/tool detail dùng Catalog API thật. Frontend gần nhất 35 tests, ESLint/typecheck/build pass; 72 matrix + 7 state axe scans không có violations, 3 state results đã review thủ công. Playwright runner dựng PostgreSQL tạm đã migrate/import đúng 202 records, FastAPI, Next production và Chromium bằng một command; foundation cùng Journey A happy path vi/en hiện có 3 cases và luôn dọn database/process/build output khi pass. Xem [commands, evidence và giới hạn](docs/operations/DISCOVER_VERIFICATION.md). Backend gần nhất 208 unit + 84 integration từ TASK-005.6.
+**Trạng thái ngày 08/10/2026:** TASK-001..006 Done; TASK-007 đang triển khai, 007.1–007.3 Done. Home/Explorer/tool detail dùng Catalog API thật. Frontend gần nhất 35 tests, ESLint/typecheck/build pass; 72 matrix + 7 state axe scans không có violations, 3 state results đã review thủ công. Playwright runner dựng PostgreSQL tạm đã migrate/import đúng 202 records, FastAPI, Next production và Chromium bằng một command; foundation, Journey A happy path vi/en và negative/publication/race recovery hiện có 8 cases và luôn dọn database/process/build output khi pass. Xem [commands, evidence và giới hạn](docs/operations/DISCOVER_VERIFICATION.md). Backend gần nhất 208 unit + 84 integration từ TASK-005.6.
 
 ## Vấn đề và người dùng
 
@@ -387,3 +387,9 @@ Evidence 06/10/2026 trên Windows: command trên pass `1` Playwright smoke test 
 `e2e/discover-journey.spec.ts` chạy cùng foundation test trên real stack. Hai cases vi/en dùng accessible role/name, đi từ Home qua search và category/pricing filters đến canonical Explorer URL, kiểm đúng ChatGPT result, provider/facts/status/evidence dates, quay lại giữ search/filters/sort/page và mở lại detail.
 
 Official `https://chatgpt.com/` link được kiểm `target="_blank"`, `noopener noreferrer`, popup có `window.opener === null`. Playwright intercept request bằng HTML cục bộ nên test không fetch official source. Evidence 07/10/2026 trên Windows/Chromium: `test:e2e:discover` pass `3` cases gồm foundation + Journey A vi/en; isolated production build pass và runner dọn database/services/`.next-e2e`/success artifacts. E2E cũng giữ regression cho English singular `1 result`.
+
+## Journey A negative paths và recovery — TASK-007.3
+
+Ngày 08/10/2026: thêm 5 cases real empty/reset, invalid category 422/reset, public 404 không lộ archived metadata, controlled 503/retry giữ query và delayed old-request recovery. Archived fixture chỉ nằm trong E2E database tạm, tách curated files; không gọi Gemini hoặc official source. ESLint bỏ qua generated `.next-e2e` output.
+
+Cùng command `test:e2e:discover` pass **8/8 cases** trong 11.6s; isolated production build, root lint/typecheck, **35 Vitest tests** và Ruff/format/mypy cho DB helper pass. Xem [operating guide](docs/operations/DISCOVER_VERIFICATION.md) để tái hiện. TASK-007 vẫn In progress; tiếp theo **007.4 — CI E2E gate và failure artifacts**.

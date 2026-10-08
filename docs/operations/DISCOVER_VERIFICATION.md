@@ -1,6 +1,6 @@
 # Discover — verification và E2E operation
 
-Phạm vi: Home → Explorer → tool detail hiện có, hai locale `vi/en`, hai theme `dark/light`, keyboard và responsive states. Không thêm feature, không gọi Gemini hoặc fetch source URLs. TASK-007.1 đã tự động hóa real-stack foundation; TASK-007.2 đã tự động hóa Journey A happy path vi/en. Negative/publication paths, race recovery và CI gate thuộc 007.3–007.4.
+Phạm vi: Home → Explorer → tool detail hiện có, hai locale `vi/en`, hai theme `dark/light`, keyboard và responsive states. Không thêm feature, không gọi Gemini hoặc fetch source URLs. TASK-007.1 đã tự động hóa real-stack foundation; TASK-007.2 đã tự động hóa Journey A happy path vi/en. TASK-007.3 đã tự động hóa negative/publication paths và race recovery. CI gate thuộc 007.4.
 
 ## Lỗi đã sửa
 
@@ -20,7 +20,7 @@ $env:E2E_DATABASE_ADMIN_URL = 'postgresql://ai_atlas:ai_atlas_dev@127.0.0.1:5543
 
 Nếu PostgreSQL ở `127.0.0.1:5432` với credentials mặc định thì không cần đặt admin URL. Optional overrides: `E2E_API_PORT`, `E2E_WEB_PORT`, `E2E_BASE_URL`, `E2E_STARTUP_TIMEOUT_MS`, `E2E_ARTIFACT_ROOT`. Không đặt ports thì runner chọn hai loopback ports riêng; custom `E2E_BASE_URL` phải khớp web origin.
 
-Runner tạo database `ai_atlas_e2e_<random>`, migrate, import curated seed và từ chối chạy nếu summary khác `202 records/15 tools`. Sau đó runner build Next production vào `.next-e2e`, start FastAPI/Next, chờ `/health/ready` và web readiness với timeout rồi chạy Chromium. `SIGINT`, `SIGTERM`, startup/test failure và success đều đi qua teardown: đóng process tree, xóa database tạm và build output. Success xóa run directory; failure giữ `api.log`, `web.log`, Playwright trace/screenshot tại `.cache/discover-e2e/<run-id>/`. Artifacts bị gitignore và không chứa raw prompt/token vì flow không gọi AI.
+Runner tạo database `ai_atlas_e2e_<random>`, migrate, import curated seed và từ chối chạy nếu summary khác `202 records/15 tools`. Sau đó helper thêm một archived fixture riêng từ `e2e/fixtures/archived-tool.json` vào database tạm (không nằm trong 202 curated records); public catalog vẫn có 15 tools. Runner build Next production vào `.next-e2e`, start FastAPI/Next, chờ `/health/ready` và web readiness với timeout rồi chạy Chromium. `SIGINT`, `SIGTERM`, startup/test failure và success đều đi qua teardown: đóng process tree, xóa database tạm và build output. Success xóa run directory; failure giữ `api.log`, `web.log`, Playwright trace/screenshot tại `.cache/discover-e2e/<run-id>/`. Artifacts bị gitignore và không chứa raw prompt/token vì flow không gọi AI.
 
 Evidence 06/10/2026, Windows/Chromium: smoke real-stack pass `1` test với auto ports và với `E2E_BASE_URL`; seed đúng `202 records/15 tools`. Sau success không còn database `ai_atlas_e2e_%`, `.next-e2e` hay run artifact. Forced API bind failure trả exit khác `0`, giữ `api.log`, vẫn xóa database/build output; artifact kiểm chứng đã được dọn. Frontend ESLint, web + E2E strict typecheck, 35 Vitest cases và isolated production build pass; backend Ruff check/format, mypy và 208 unit cases pass. Smoke xác nhận API/BFF/UI và detail-link contract; không thay thế Journey A cases của 007.2/007.3.
 
@@ -31,6 +31,22 @@ Cùng command `test:e2e:discover` chạy thêm `e2e/discover-journey.spec.ts`. M
 Official link phải là `https://chatgpt.com/`, `_blank`, `noopener noreferrer`; test cài route interception trước click, xác nhận popup URL, nội dung cục bộ và `window.opener === null`. Không có request nào đi ra official host. Test dùng role/name; chỉ dùng URL và attribute cho contract mà accessibility tree không biểu diễn.
 
 Evidence 07/10/2026, Windows/Chromium: real stack với curated seed `202 records/15 tools` pass `3` cases (`1` foundation, Journey A vi + en) trong `19.4s`; isolated production build, root ESLint/strict typecheck và 35 Vitest cases pass. Runner đã dọn database, services, `.next-e2e` và success artifacts. Browser smoke riêng ở 1366×900 đã kiểm trực quan Home, filtered Explorer, expanded evidence detail và back-state; English count defect `1 results` được sửa thành `1 result`. Backend không đổi nên không chạy lại suite backend của TASK-005.6.
+
+## Negative/publication paths và race recovery — TASK-007.3
+
+Cùng command `test:e2e:discover` chạy `e2e/discover-recovery.spec.ts` với 5 cases:
+
+- Query ChatGPT + API=false trả real 200/empty; reset bỏ search/filter và phục hồi 15 tools.
+- Category không tồn tại trả real 422; UI giữ request ID, reset về catalog.
+- Archived fixture thật bị loại khỏi list/search, detail API trả 404; archived UUID, absent UUID và malformed ID đều trả public HTML 404, không lộ private name/slug/description/official URL trong HTML hoặc DOM. Malformed ID ở backend API vẫn theo contract 422; page UI map sang 404.
+- Chỉ request tools đầu tiên được intercept thành BFF 503. UI giữ search/category/pricing/sort trong URL và request ID; Retry gọi cùng URL tới real backend, phục hồi ChatGPT và xóa error.
+- Response ChatGPT lấy bằng `route.fetch()` từ backend thật được giữ bằng promise gate. Trong lúc chờ vẫn thấy Gemini cũ; search Claude trả result mới, request ChatGPT bị abort. Sau release response cũ, URL/card vẫn là Claude và không hiện error. Không dùng sleep để đoán thứ tự. Đây là browser cancellation recovery; existing unit tests kiểm sequence guard với late promise độc lập với abort.
+
+Fixture được seed sau import bằng helper chỉ nhận local admin URL + tên `ai_atlas_e2e_<16 hex>`; connection override database bằng tên tạm. Helper kiểm row archived tồn tại để không nhầm archived với absent. Không fetch URL `.invalid` trong fixture. Teardown xóa database cùng fixture cả khi suite fail.
+
+Evidence 08/10/2026, Windows/Chromium: **8/8 E2E cases pass trong 11.6s**, isolated production build pass; root lint, strict typecheck (gồm E2E), **35/35 Vitest** và Ruff/format/mypy DB helper pass. First run phát hiện locator alert trùng Next route announcer; đã scope bằng Results region. Parallel lint/E2E phát hiện generated `.next-e2e` chưa được ignore; đã thêm ignore và chạy lại lint pass. Không thay đổi backend application hay UI behavior; backend suite 208 unit/84 integration không chạy lại. Hậu kiểm 0 temporary databases, services và `.next-e2e` đã dọn; success artifacts được xóa. TASK-007.4–007.5 vẫn Todo.
+
+Artifacts của first failed run được giữ tại `.cache/discover-e2e/fa5a2f1128527f07/` để điều tra locator; optional cleanup bị execution policy chặn. Database tạm của run đó đã được runner xóa. Compose DB đã trả về trạng thái stopped sau verification.
 
 ## Manual TASK-006.7 commands
 
@@ -101,4 +117,4 @@ Matrix 72 scans không có incomplete. Screenshots desktop/mobile đã kiểm tr
 2. Tab tới skip link, search, sort, filters/chips/pagination; mở drawer, đi hết controls theo hai chiều và Escape. Focus không bị footer/header che.
 3. Kiểm empty (`api_available=false` với seed hiện tại), 422 (category không tồn tại), 404 và API unavailable/retry; không dùng fallback catalog giả.
 4. Chạy matrix audit, đọc cả violations và incomplete; kiểm screenshots, reduced motion và forced colors. Không tự approve visual changes chỉ vì tests xanh.
-5. Chạy frontend checks và `test:e2e:discover`. TASK-007.3 tiếp tục negative/publication paths cùng race recovery; CI gate thuộc 007.4.
+5. Chạy frontend checks và `test:e2e:discover`. Negative/publication paths cùng race recovery đã có ở TASK-007.3; CI gate tiếp theo thuộc 007.4.

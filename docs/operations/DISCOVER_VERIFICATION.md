@@ -1,6 +1,6 @@
 # Discover — verification và E2E operation
 
-Phạm vi: Home → Explorer → tool detail hiện có, hai locale `vi/en`, hai theme `dark/light`, keyboard và responsive states. Không thêm feature, không gọi Gemini hoặc fetch source URLs. TASK-007.1 đã tự động hóa real-stack foundation; TASK-007.2 đã tự động hóa Journey A happy path vi/en. TASK-007.3 đã tự động hóa negative/publication paths và race recovery. CI gate thuộc 007.4.
+Phạm vi: Home → Explorer → tool detail hiện có, hai locale `vi/en`, hai theme `dark/light`, keyboard và responsive states. Không thêm feature, không gọi Gemini hoặc fetch source URLs. TASK-007.1 đã tự động hóa real-stack foundation; 007.2–007.3 phủ Journey A happy/negative/recovery; TASK-007.4 đã thêm GitHub Actions E2E gate. Full regression và bàn giao TASK-007 thuộc 007.5.
 
 ## Lỗi đã sửa
 
@@ -47,6 +47,16 @@ Fixture được seed sau import bằng helper chỉ nhận local admin URL + t�
 Evidence 08/10/2026, Windows/Chromium: **8/8 E2E cases pass trong 11.6s**, isolated production build pass; root lint, strict typecheck (gồm E2E), **35/35 Vitest** và Ruff/format/mypy DB helper pass. First run phát hiện locator alert trùng Next route announcer; đã scope bằng Results region. Parallel lint/E2E phát hiện generated `.next-e2e` chưa được ignore; đã thêm ignore và chạy lại lint pass. Không thay đổi backend application hay UI behavior; backend suite 208 unit/84 integration không chạy lại. Hậu kiểm 0 temporary databases, services và `.next-e2e` đã dọn; success artifacts được xóa. TASK-007.4–007.5 vẫn Todo.
 
 Artifacts của first failed run được giữ tại `.cache/discover-e2e/fa5a2f1128527f07/` để điều tra locator; optional cleanup bị execution policy chặn. Database tạm của run đó đã được runner xóa. Compose DB đã trả về trạng thái stopped sau verification.
+
+## GitHub Actions E2E gate — TASK-007.4
+
+Workflow `CI` chạy job `Discover E2E` trên mọi pull request và push vào `develop`/`main`. Job dùng Ubuntu runner sạch, cài Node/pnpm và Python/uv đã pin, locked dependencies cùng Chromium system dependencies, rồi `docker compose up --detach --wait db` và `pnpm test:e2e:discover`. Runner tiếp tục tạo database `ai_atlas_e2e_<random>` bên trong PostgreSQL disposable, migrate/import/seed fixture, start FastAPI + Next production và chạy Chromium.
+
+Guardrails: job timeout 25 phút, E2E step timeout 15 phút, startup timeout 60 giây và Playwright `retries: 0`; không `continue-on-error`. Workflow không đọc `${{ secrets.* }}` hoặc truyền `GEMINI_API_KEY`; harness đặt `RUN_LIVE_AI_TESTS=0`, xóa key khỏi runtime và official request được fulfill cục bộ trong test. Browser/package installation vẫn cần registry/CDN của toolchain; product flow không gọi external AI hoặc evidence/official source.
+
+Nếu bất kỳ step nào fail, `actions/upload-artifact@v4` cố upload `.cache/discover-e2e/` với hidden files, retention 7 ngày. Failure sau khi harness start có `api.log`, `web.log`, Playwright screenshot/trace/error context; install/startup sớm có thể chưa tạo artifact và uploader chỉ warning để không che lỗi gốc. Step `if: always()` chạy `docker compose down --volumes --remove-orphans` và xóa `.next-e2e`; GitHub vẫn tự hủy runner/container khi job kết thúc.
+
+Evidence 09/10/2026: actionlint 1.7.12 pass. Local CI-mode (`CI=true`) trên Windows/Chromium pass 8/8 cases trong 11.9s cùng isolated production build. Forced deterministic assertion failure trả exit 1, 7 cases còn lại pass, giữ đầy đủ hai service logs + screenshot + trace + error context; runner cleanup còn 0 temporary database và không còn `.next-e2e`. Root lint/typecheck và 35/35 Vitest pass. GitHub-hosted execution/artifact upload chưa quan sát vì task không commit/push; workflow sẽ là gate khi thay đổi được đẩy lên remote.
 
 ## Manual TASK-006.7 commands
 
@@ -117,4 +127,4 @@ Matrix 72 scans không có incomplete. Screenshots desktop/mobile đã kiểm tr
 2. Tab tới skip link, search, sort, filters/chips/pagination; mở drawer, đi hết controls theo hai chiều và Escape. Focus không bị footer/header che.
 3. Kiểm empty (`api_available=false` với seed hiện tại), 422 (category không tồn tại), 404 và API unavailable/retry; không dùng fallback catalog giả.
 4. Chạy matrix audit, đọc cả violations và incomplete; kiểm screenshots, reduced motion và forced colors. Không tự approve visual changes chỉ vì tests xanh.
-5. Chạy frontend checks và `test:e2e:discover`. Negative/publication paths cùng race recovery đã có ở TASK-007.3; CI gate tiếp theo thuộc 007.4.
+5. Chạy frontend checks và `test:e2e:discover`; PR/push phải qua job `Discover E2E`. TASK-007.5 chạy full regression và bàn giao release gate.

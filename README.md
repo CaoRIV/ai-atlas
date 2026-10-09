@@ -4,7 +4,7 @@
 
 AI Atlas là nền tảng khám phá AI tools và xây dựng AI stack theo mục tiêu, thiết bị và ngân sách của người dùng. Sản phẩm kết nối một thư viện được biên tập với hệ thống đề xuất có căn cứ, giúp trả lời: có công cụ nào, công cụ nào phù hợp và chúng kết hợp thành quy trình như thế nào?
 
-**Trạng thái ngày 08/10/2026:** TASK-001..006 Done; TASK-007 đang triển khai, 007.1–007.3 Done. Home/Explorer/tool detail dùng Catalog API thật. Frontend gần nhất 35 tests, ESLint/typecheck/build pass; 72 matrix + 7 state axe scans không có violations, 3 state results đã review thủ công. Playwright runner dựng PostgreSQL tạm đã migrate/import đúng 202 records, FastAPI, Next production và Chromium bằng một command; foundation, Journey A happy path vi/en và negative/publication/race recovery hiện có 8 cases và luôn dọn database/process/build output khi pass. Xem [commands, evidence và giới hạn](docs/operations/DISCOVER_VERIFICATION.md). Backend gần nhất 208 unit + 84 integration từ TASK-005.6.
+**Trạng thái ngày 09/10/2026:** TASK-001..006 Done; TASK-007 đang triển khai, 007.1–007.4 Done. Home/Explorer/tool detail dùng Catalog API thật. Frontend gần nhất 35 tests, ESLint/typecheck/build pass; 72 matrix + 7 state axe scans không có violations, 3 state results đã review thủ công. Playwright runner dựng PostgreSQL tạm đã migrate/import đúng 202 records, FastAPI, Next production và Chromium bằng một command; 8 Journey A cases chạy thành GitHub Actions gate cho PR và push vào `develop`/`main`, có bounded timeout, failure artifacts và teardown luôn chạy. Xem [commands, evidence và giới hạn](docs/operations/DISCOVER_VERIFICATION.md). Backend gần nhất 208 unit + 84 integration từ TASK-005.6.
 
 ## Vấn đề và người dùng
 
@@ -392,4 +392,12 @@ Official `https://chatgpt.com/` link được kiểm `target="_blank"`, `noopene
 
 Ngày 08/10/2026: thêm 5 cases real empty/reset, invalid category 422/reset, public 404 không lộ archived metadata, controlled 503/retry giữ query và delayed old-request recovery. Archived fixture chỉ nằm trong E2E database tạm, tách curated files; không gọi Gemini hoặc official source. ESLint bỏ qua generated `.next-e2e` output.
 
-Cùng command `test:e2e:discover` pass **8/8 cases** trong 11.6s; isolated production build, root lint/typecheck, **35 Vitest tests** và Ruff/format/mypy cho DB helper pass. Xem [operating guide](docs/operations/DISCOVER_VERIFICATION.md) để tái hiện. TASK-007 vẫn In progress; tiếp theo **007.4 — CI E2E gate và failure artifacts**.
+Cùng command `test:e2e:discover` pass **8/8 cases** trong 11.6s; isolated production build, root lint/typecheck, **35 Vitest tests** và Ruff/format/mypy cho DB helper pass. Xem [operating guide](docs/operations/DISCOVER_VERIFICATION.md) để tái hiện. TASK-007 vẫn In progress; 007.4 đã thêm CI gate, tiếp theo **007.5 — full regression và bàn giao TASK-007**.
+
+## Discover E2E CI gate — TASK-007.4
+
+Job `Discover E2E` trong `.github/workflows/ci.yml` chạy trên mọi pull request và push vào `develop`/`main`. Job cài dependencies khóa bằng pnpm/uv, Chromium system dependencies, dựng PostgreSQL Compose disposable rồi gọi cùng `test:e2e:discover` command. Job timeout 25 phút, E2E step timeout 15 phút; Playwright giữ `retries: 0`, lỗi không `continue-on-error`.
+
+Khi fail, `actions/upload-artifact@v4` upload toàn bộ hidden `.cache/discover-e2e/` trong 7 ngày, gồm service logs, screenshot, trace và error context nếu harness đã chạy. `if: always()` xóa Compose volume và `.next-e2e`. Workflow không đọc secrets hoặc truyền Gemini key; harness buộc live AI off và official link được Playwright fulfill cục bộ.
+
+Evidence 09/10/2026: actionlint 1.7.12 pass; local CI-mode run (`CI=true`) pass **8/8 cases** trong 11.9s cùng isolated production build. Forced deterministic assertion failure trả exit `1`, giữ `api.log`, `web.log`, screenshot, trace và error context; runner vẫn xóa database/process/build output. Root lint/typecheck và **35/35 Vitest** pass. GitHub-hosted execution và artifact upload chỉ quan sát được sau commit/push; task không push repository.

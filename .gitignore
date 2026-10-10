@@ -15,10 +15,11 @@ __pycache__/
 .cache/
 *.py[cod]
 
-# Local configuration and secrets
+# Local configuration, notes, and secrets
 .env
 .env.local
 .env.*.local
+LOCAL_COMMANDS.md
 
 # Build and editor output
 dist/

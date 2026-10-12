@@ -1,6 +1,6 @@
 # Discover — verification và E2E operation
 
-Phạm vi: Home → Explorer → tool detail hiện có, hai locale `vi/en`, hai theme `dark/light`, keyboard và responsive states. Không thêm feature, không gọi Gemini hoặc fetch source URLs. TASK-007.1 đã tự động hóa real-stack foundation; 007.2–007.3 phủ Journey A happy/negative/recovery; TASK-007.4 đã thêm GitHub Actions E2E gate. Full regression và bàn giao TASK-007 thuộc 007.5.
+Phạm vi: Home → Explorer → tool detail hiện có, hai locale `vi/en`, hai theme `dark/light`, keyboard và responsive states. Không thêm feature, không gọi Gemini hoặc fetch source URLs. TASK-007.1–007.4 tự động hóa real-stack Journey A và CI gate; TASK-007.5 đã chạy full regression, sửa blocker Windows pytest temp và bàn giao TASK-007. Discover hiện được freeze: không thêm filter, animation/theme, test matrix, CSS refactor hoặc E2E recovery khi chưa có defect tái hiện.
 
 ## Lỗi đã sửa
 
@@ -57,6 +57,27 @@ Guardrails: job timeout 25 phút, E2E step timeout 15 phút, startup timeout 60 
 Nếu bất kỳ step nào fail, `actions/upload-artifact@v4` cố upload `.cache/discover-e2e/` với hidden files, retention 7 ngày. Failure sau khi harness start có `api.log`, `web.log`, Playwright screenshot/trace/error context; install/startup sớm có thể chưa tạo artifact và uploader chỉ warning để không che lỗi gốc. Step `if: always()` chạy `docker compose down --volumes --remove-orphans` và xóa `.next-e2e`; GitHub vẫn tự hủy runner/container khi job kết thúc.
 
 Evidence 09/10/2026: actionlint 1.7.12 pass. Local CI-mode (`CI=true`) trên Windows/Chromium pass 8/8 cases trong 11.9s cùng isolated production build. Forced deterministic assertion failure trả exit 1, 7 cases còn lại pass, giữ đầy đủ hai service logs + screenshot + trace + error context; runner cleanup còn 0 temporary database và không còn `.next-e2e`. Root lint/typecheck và 35/35 Vitest pass. GitHub-hosted execution/artifact upload chưa quan sát vì task không commit/push; workflow sẽ là gate khi thay đổi được đẩy lên remote.
+
+## Full regression và bàn giao — TASK-007.5
+
+Các command bàn giao từ repo root:
+
+```powershell
+.\scripts\check.ps1
+$env:DATABASE_URL = 'postgresql://ai_atlas:ai_atlas_dev@127.0.0.1:55432/ai_atlas'
+$testTemp = Join-Path '.cache' ('pytest-integration-' + [guid]::NewGuid().ToString('N'))
+try {
+  uv run pytest --basetemp $testTemp -p no:cacheprovider -m integration
+} finally {
+  Remove-Item -LiteralPath $testTemp -Recurse -Force -ErrorAction SilentlyContinue
+}
+$env:E2E_DATABASE_ADMIN_URL = 'postgresql://ai_atlas:ai_atlas_dev@127.0.0.1:55432/ai_atlas'
+.\scripts\pnpm.ps1 test:e2e:discover
+```
+
+Evidence 12/10/2026, Windows/Chromium: lần đầu `scripts/check.ps1` fail trước 15 curated CLI cases vì pytest truy cập `%LOCALAPPDATA%\Temp\pytest-of-Admin` trả `WinError 5`; đây là blocker command bàn giao đã tái hiện. Script hiện tạo unique `--basetemp` dưới `.cache`, dùng `-p no:cacheprovider` và cleanup trong `finally`; lần chạy lại pass ESLint, web/E2E strict typecheck, production build, **35/35 Vitest**, Ruff check/format, mypy và **208/208 unit**. Full PostgreSQL suite tại Compose host port 55432 pass **84/84 integration** trong 55.03s. Real-stack harness import đúng **202 records/15 published tools**, build Next production và pass **8/8 E2E** trong 13.8s; success cleanup services, database tạm, `.next-e2e` và artifacts.
+
+Browser smoke riêng tại 1366×900 trên FastAPI + Next production đã kiểm Home, search ChatGPT, category `chatting-assistants`, pricing `unknown`, canonical URL và đúng một result; detail hiển thị OpenAI, verified capability, checked/expires evidence; official link là `https://chatgpt.com/`, `_blank`, `noopener noreferrer`; quay lại giữ query/filter. Smoke không click/fetch official source. Không chạy lại 72 matrix + 7 state axe scans, không đo latency hoặc screen-reader compatibility và không gọi Gemini; các giới hạn accessibility cũ vẫn giữ nguyên.
 
 ## Manual TASK-006.7 commands
 

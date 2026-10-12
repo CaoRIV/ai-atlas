@@ -29,7 +29,13 @@ if ($LASTEXITCODE -ne 0) { throw "API and E2E helper format check failed." }
 & uv run mypy
 if ($LASTEXITCODE -ne 0) { throw "API typecheck failed." }
 
-& uv run pytest -m "not integration and not live"
-if ($LASTEXITCODE -ne 0) { throw "API unit tests failed." }
+$testTemp = Join-Path $repositoryRoot (".cache\pytest-check-" + [guid]::NewGuid().ToString("N"))
+try {
+    & uv run pytest --basetemp $testTemp -p no:cacheprovider -m "not integration and not live"
+    if ($LASTEXITCODE -ne 0) { throw "API unit tests failed." }
+}
+finally {
+    Remove-Item -LiteralPath $testTemp -Recurse -Force -ErrorAction SilentlyContinue
+}
 
 Write-Host "All local static and unit checks passed."

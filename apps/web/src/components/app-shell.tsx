@@ -1,7 +1,7 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { Compass, House, Menu, Monitor, Moon, Sun, X } from "lucide-react";
+import { Blocks, Compass, House, Menu, Monitor, Moon, Sun, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -39,6 +39,7 @@ function subscribeToLocaleChange(onStoreChange: () => void): () => void {
 
 const shellCopy = {
   vi: {
+    builder: "Xây stack",
     closeMenu: "Đóng điều hướng",
     drawerDescription: "Điều hướng chính và tùy chọn hiển thị của AI Atlas.",
     drawerTitle: "Điều hướng",
@@ -59,6 +60,7 @@ const shellCopy = {
     themeSystem: "Theo hệ thống",
   },
   en: {
+    builder: "Build",
     closeMenu: "Close navigation",
     drawerDescription: "AI Atlas primary navigation and display preferences.",
     drawerTitle: "Navigation",
@@ -86,6 +88,7 @@ function Navigation({ copy, onNavigate }: { copy: ShellCopy; onNavigate?: () => 
   const pathname = usePathname();
   const isHome = pathname === "/";
   const isExplorer = pathname === "/explorer";
+  const isBuilder = pathname === "/builder";
 
   return (
     <nav aria-label={copy.navigation} className="shell-navigation">
@@ -107,6 +110,15 @@ function Navigation({ copy, onNavigate }: { copy: ShellCopy; onNavigate?: () => 
       >
         <Compass aria-hidden="true" size={19} strokeWidth={1.75} />
         <span>{copy.explorer}</span>
+      </Link>
+      <Link
+        aria-current={isBuilder ? "page" : undefined}
+        className="navigation-link"
+        href="/builder"
+        onClick={onNavigate}
+      >
+        <Blocks aria-hidden="true" size={19} strokeWidth={1.75} />
+        <span>{copy.builder}</span>
       </Link>
     </nav>
   );

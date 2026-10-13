@@ -8,6 +8,8 @@ from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException
 
+from ai_atlas_api.builder import BuilderLiteService
+from ai_atlas_api.builder_routes import builder_router
 from ai_atlas_api.catalog import CatalogError, CatalogRepository
 from ai_atlas_api.catalog_models import ErrorBody, ErrorDetail, ErrorResponse
 from ai_atlas_api.catalog_routes import catalog_router
@@ -95,9 +97,9 @@ def create_app(
     async def internal_error(request: Request, exc: Exception) -> JSONResponse:
         return error_response(request, 500, "INTERNAL_ERROR", "Đã xảy ra lỗi hệ thống.")
 
-    application.include_router(
-        catalog_router(CatalogRepository(runtime_settings.database_url_value()))
-    )
+    repository = CatalogRepository(runtime_settings.database_url_value())
+    application.include_router(catalog_router(repository))
+    application.include_router(builder_router(BuilderLiteService(repository)))
 
     @application.get("/health/live", response_model=LivenessResponse)
     async def liveness() -> LivenessResponse:

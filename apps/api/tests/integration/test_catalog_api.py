@@ -392,3 +392,55 @@ async def test_unpublished_or_absent_detail_is_404(
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "NOT_FOUND"
     assert response.json()["request_id"] == response.headers["X-Request-ID"]
+
+
+async def test_builder_lite_returns_only_verified_eligible_candidates(client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/v1/builder/candidates",
+        json={
+            "objective": "Alpha writing assistant",
+            "constraints": {"platform": "windows", "api_required": True},
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["data"]["status"] == "partial"
+    assert [item["tool"]["slug"] for item in body["data"]["candidates"]] == ["alpha"]
+    assert [item["tool"]["slug"] for item in body["data"]["exclusions"]] == ["beta"]
+    candidate = body["data"]["candidates"][0]
+    assert {decision["outcome"] for decision in candidate["decisions"]} == {"pass"}
+    assert candidate["evidence"]
+    assert all(item["source_url"].startswith("https://") for item in candidate["evidence"])
+    assert "checked_by" not in response.text and "excerpt" not in response.text
+    assert body["request_id"] == response.headers["X-Request-ID"]
+
+
+async def test_builder_lite_fail_closed_and_clarification_statuses(client: AsyncClient) -> None:
+    no_match = await client.post(
+        "/api/v1/builder/candidates",
+        json={
+            "objective": "Alpha writing assistant",
+            "constraints": {"platform": "linux"},
+        },
+    )
+    clarification = await client.post(
+        "/api/v1/builder/candidates",
+        json={
+            "objective": "Alpha writing assistant",
+            "constraints": {"budget_usd_month": 10},
+        },
+    )
+
+    assert no_match.status_code == clarification.status_code == 200
+    assert no_match.json()["data"]["status"] == "no_match"
+    assert no_match.json()["data"]["candidates"] == []
+    assert clarification.json()["data"]["status"] == "needs_clarification"
+    assert clarification.json()["data"]["data_gaps"] == [
+        {
+            "tool_id": None,
+            "tool_name": None,
+            "constraint": "budget_usd_month",
+            "reason": "monthly_usage_required",
+        }
+    ]

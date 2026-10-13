@@ -71,11 +71,15 @@ function targetPath(target: CatalogTarget): string {
   return `/api/v1/tools/${encodeURIComponent(target.toolId)}`;
 }
 
-function unavailableResponse(requestId: string): Response {
+function unavailableResponse(
+  requestId: string,
+  code = "CATALOG_UNAVAILABLE",
+  message = "Dịch vụ catalog hiện không khả dụng.",
+): Response {
   const body: CatalogErrorResponse = {
     error: {
-      code: "CATALOG_UNAVAILABLE",
-      message: "Dịch vụ catalog hiện không khả dụng.",
+      code,
+      message,
       details: [],
     },
     request_id: requestId,
@@ -126,5 +130,77 @@ export async function proxyCatalogGet(request: Request, target: CatalogTarget): 
     });
   } catch {
     return unavailableResponse(requestId);
+  }
+}
+
+const builderBodyLimitBytes = 16_384;
+
+function builderValidationResponse(requestId: string, status: number, reason: string): Response {
+  const body: CatalogErrorResponse = {
+    error: {
+      code: "VALIDATION_ERROR",
+      message: "Dữ liệu đầu vào không hợp lệ.",
+      details: [{ field: "body", reason }],
+    },
+    request_id: requestId,
+  };
+  return Response.json(body, {
+    status,
+    headers: { "Cache-Control": "no-store", "X-Request-ID": requestId },
+  });
+}
+
+export async function proxyBuilderPost(request: Request): Promise<Response> {
+  const requestId = crypto.randomUUID();
+  try {
+    const sourceUrl = new URL(request.url);
+    if (sourceUrl.search) {
+      return builderValidationResponse(requestId, 422, "query_not_allowed");
+    }
+    const contentLength = Number(request.headers.get("content-length") ?? "0");
+    if (Number.isFinite(contentLength) && contentLength > builderBodyLimitBytes) {
+      return builderValidationResponse(requestId, 413, "body_too_large");
+    }
+    const body = await request.text();
+    if (new TextEncoder().encode(body).byteLength > builderBodyLimitBytes) {
+      return builderValidationResponse(requestId, 413, "body_too_large");
+    }
+
+    const config = readCatalogServerConfig();
+    const upstreamUrl = new URL("/api/v1/builder/candidates", config.baseUrl);
+    const response = await fetch(upstreamUrl, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "X-Request-ID": requestId,
+      },
+      body,
+      cache: "no-store",
+      redirect: "error",
+      signal: AbortSignal.any([request.signal, AbortSignal.timeout(config.timeoutMs)]),
+    });
+
+    const headers = new Headers({ "Cache-Control": "no-store" });
+    for (const name of forwardedResponseHeaders) {
+      const value = response.headers.get(name);
+      if (value !== null) {
+        headers.set(name, value);
+      }
+    }
+    if (!headers.has("x-request-id")) {
+      headers.set("x-request-id", requestId);
+    }
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  } catch {
+    return unavailableResponse(
+      requestId,
+      "BUILDER_UNAVAILABLE",
+      "Dịch vụ Builder hiện không khả dụng.",
+    );
   }
 }

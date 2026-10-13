@@ -4,7 +4,7 @@
 
 AI Atlas là nền tảng khám phá AI tools và xây dựng AI stack theo mục tiêu, thiết bị và ngân sách của người dùng. Sản phẩm kết nối một thư viện được biên tập với hệ thống đề xuất có căn cứ, giúp trả lời: có công cụ nào, công cụ nào phù hợp và chúng kết hợp thành quy trình như thế nào?
 
-**Trạng thái ngày 12/10/2026:** TASK-001..007 Done; Discover Home/Explorer/tool detail dùng Catalog API thật và được freeze sau full regression 007.5. Frontend ESLint/typecheck/build và **35/35 Vitest** pass; backend Ruff/format/mypy, **208/208 unit** và **84/84 integration** pass. Playwright real-stack dựng PostgreSQL tạm từ curated seed **202 records/15 tools**, FastAPI, Next production và Chromium; **8/8 Journey A cases** pass và vẫn là GitHub Actions gate cho PR/push với bounded timeout, failure artifacts và always teardown. `scripts/check.ps1` dùng repo-local pytest temp riêng để tránh Windows user-temp ACL. Xem [commands, evidence và giới hạn](docs/operations/DISCOVER_VERIFICATION.md). 72 matrix + 7 state axe scans là evidence TASK-006 đã có, không được mở rộng hoặc diễn giải thành chứng nhận accessibility trong 007.5.
+**Trạng thái ngày 13/10/2026:** TASK-001..007 và checkpoint TASK-008A Done. Discover Home/Explorer/tool detail vẫn freeze sau regression 007.5; Builder Lite tại `/builder` dùng keyword retrieval + deterministic fail-closed eligibility trên catalog thật, hiển thị evidence/data gaps và không gọi Gemini, auth, Save hoặc persistence. Frontend ESLint/typecheck/build và **35/35 Vitest** pass; backend Ruff/format/mypy, **212/212 unit** và **86/86 integration** pass. Actual browser smoke PostgreSQL/FastAPI/Next production kiểm `partial`, `needs_clarification`, link tool detail, vi/en, mobile 360px và axe 0 violations. Full hybrid retrieval/generation/stack vẫn theo TASK-008..013; không coi Builder Lite là full MVP Builder. Xem [API contract](docs/architecture/API_DESIGN.md), [backlog evidence](docs/planning/TASKS.md) và [local commands](LOCAL_COMMANDS.md).
 
 ## Vấn đề và người dùng
 
@@ -18,6 +18,13 @@ Danh sách liên kết đơn thuần chưa giúp người dùng đánh giá gi�
 - Quản trị dữ liệu bằng quy trình import/validate dành cho maintainer; evaluation và observability cơ bản.
 
 So sánh nâng cao, workflow editor tương tác, multi-agent, scraping diện rộng, thanh toán và social features nằm ngoài MVP. Tên sản phẩm thể hiện cả tầm nhìn dài hạn; Compare chưa phải tính năng đã có.
+
+### Internal Beta hiện có — Builder Lite
+
+- Mở <http://127.0.0.1:3000/builder> sau khi PostgreSQL, FastAPI và Next.js sẵn sàng theo `LOCAL_COMMANDS.md`.
+- API thật: `POST /api/v1/builder/candidates`; BFF: `POST /api/builder/candidates`. Request chỉ gồm `objective` và hard `constraints` đã định nghĩa; unknown fields/query parameters bị từ chối.
+- Candidate chỉ pass khi mọi hard constraint có fact verified + evidence fresh. Unknown/stale/unverified không bị đổi thành false/free/compatible; chúng xuất hiện trong exclusions/data gaps.
+- Kết quả có candidates vẫn là `partial` vì baseline chưa tạo roles/workflow/stack. Không có LLM usage, generation ID hoặc Save ở slice này.
 
 ## Công nghệ và kiến trúc
 

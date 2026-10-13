@@ -10,7 +10,7 @@ Tài liệu chuyển brief “Minimal Developer SaaS + AI-native Product + Data-
 
 Đọc [AGENTS](../../AGENTS.md), [README](../../README.md), [PRD](../product/PRD.md), [User flows](../product/USER_FLOWS.md), [Architecture](../architecture/SYSTEM_ARCHITECTURE.md), [Data model](../architecture/DATA_MODEL.md), [API](../architecture/API_DESIGN.md) và [AI spec](../architecture/AI_RECOMMENDATION.md) trước khi code.
 
-Repository hiện có app shell responsive, semantic tokens hai theme, dark/light/system pre-paint, locale `vi/en`, accessible drawer, Catalog BFF boundary và Home nối API thật với SearchField/ToolCard/loading/empty/error/retry. Chưa có Explorer/tool detail/Builder/My Stacks hoặc visual regression baseline; các feature component/route còn lại dưới đây vẫn là thiết kế dự kiến. PRD/Accepted ADR và API contracts có ưu tiên cao hơn tài liệu này khi có xung đột; UI không tự mở rộng payload để phù hợp mockup.
+Repository hiện có app shell responsive, semantic tokens hai theme, dark/light/system pre-paint, locale `vi/en`, accessible drawer, Catalog BFF boundary, Home/Explorer/tool detail và Builder Lite deterministic nối API thật. Builder Lite chỉ là Internal Beta checkpoint: keyword candidates + fail-closed hard constraints + evidence/gaps trên cùng trang; chưa có full generation, roles/workflow, auth/Save/My Stacks hoặc visual regression baseline cho Builder. Các feature còn lại dưới đây vẫn là thiết kế dự kiến; PRD/Accepted ADR và API contracts có ưu tiên cao hơn tài liệu này khi có xung đột.
 
 ### 1.1. Quyết định thiết kế
 
@@ -222,6 +222,8 @@ Hardening 006.7 (05/10/2026): drawer chỉ scroll fields, header/actions nằm n
 ### 6.4. AI Stack Builder — `/builder`
 
 **Bố cục:** H1 “Tạo AI Stack” → mô tả ngắn → objective form → optional constraints → submit → result dưới form. Desktop có rail “Cách dùng” ngắn trước generation; khi có kết quả thay bằng summary constraints. Không dùng chat bubbles, transcript hoặc sidebar lịch sử chưa được API hỗ trợ.
+
+**Internal Beta đang triển khai:** `/builder` hiện dùng `POST /api/v1/builder/candidates`, không gọi Gemini và không tạo generation/stack. UI dùng cùng objective + optional hard constraints, nhưng result là candidates riêng lẻ với decisions/evidence/exclusions/data gaps và luôn nêu ba limitations; candidate hợp lệ mang status `partial`, không giả `complete`. Không hiện preferences, required roles, workflow hay Save trước khi full contracts của TASK-008/009/010/011/013 hoàn tất.
 
 Objective textarea 5–7 dòng, label “Bạn muốn hoàn thành việc gì?”, counter 10–4000 ký tự, ví dụ RAG PDF trên Windows 8GB. Một example button “Dùng ví dụ chatbot PDF” chỉ điền form, không tự gửi; khi form đã có nội dung phải hỏi trước thay thế.
 

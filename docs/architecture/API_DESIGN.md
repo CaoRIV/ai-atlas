@@ -1,6 +1,6 @@
 # REST API design
 
-Contract `/api/v1`. Catalog routes đã triển khai trong TASK-004 ngày 30/09/2026; generation/auth/stack routes còn theo backlog. Nguồn entities: [Data model](DATA_MODEL.md); recommendation result: [AI spec](AI_RECOMMENDATION.md). FastAPI xuất OpenAPI tại `/openapi.json`, Swagger UI tại `/docs` cho các routes đã có.
+Contract `/api/v1`. Catalog routes đã triển khai trong TASK-004 ngày 30/09/2026; Builder Lite deterministic route triển khai trong TASK-008A ngày 12/10/2026; full generation/auth/stack routes còn theo backlog. Nguồn entities: [Data model](DATA_MODEL.md); recommendation result: [AI spec](AI_RECOMMENDATION.md). FastAPI xuất OpenAPI tại `/openapi.json`, Swagger UI tại `/docs` cho các routes đã có.
 
 ## 1. Quy ước chung
 
@@ -58,7 +58,17 @@ Keyword dùng `plainto_tsquery('simple', q)` trên weighted search projection c�
 
 Categories seed gồm Chatting & Assistants, Coding & Development, Image Generation & Editing, Video Generation & Editing, Audio & Speech, Research & Learning, Productivity & Automation, AI Agents. Slugs tương ứng `chatting-assistants`, `coding-development`, `image-generation-editing`, `video-generation-editing`, `audio-speech`, `research-learning`, `productivity-automation`, `ai-agents`. UUIDs và labels được định nghĩa cố định trong [curated taxonomy](../../data/curated/taxonomy.json). Importer và seed đã có; operator import tường minh theo [operating guide](../operations/CURATED_CATALOG.md), không tự seed development/production DB khi khởi động API.
 
-## 3. Generation
+## 3. Builder
+
+### POST /api/v1/builder/candidates — Internal Beta
+
+Public, không auth vì endpoint không gọi provider AI, không ghi run/stack và không phát sinh usage. Đây là deterministic baseline riêng; không thay thế contract generation đầy đủ bên dưới. Body strict: `objective` 10–4000 chars và `constraints` optional gồm `platform`, `ram_gb`, `deployment`, `offline_required`, `api_required`, `budget_usd_month`, `monthly_usage`. Boolean `false` nghĩa không bắt buộc, không phải hard requirement phủ định. Có hard budget nhưng thiếu `monthly_usage` trả domain status `needs_clarification`. Unknown keys/query parameters trả 422.
+
+Backend lấy tối đa 30 published candidates bằng keyword OR, exact name/slug ưu tiên và UUID tie-break; sau đó kiểm hard constraints fail-closed trên effective facts. Chỉ fact `verified` có evidence đúng revision và còn hiệu lực mới pass. Fact thiếu, unknown, unverified hoặc stale bị loại và xuất hiện trong `data_gaps`; không tự coi unknown là false/free/compatible. Budget chỉ pass chắc chắn với verified `pricing.model=free`; verified `monthly_min` USD lớn hơn budget fail, trường hợp còn lại là `pricing_not_comparable`.
+
+200 dùng object envelope chung: `{data:{status,objective_summary,candidates,exclusions,data_gaps,limitations},request_id}`. Candidate gồm `ToolSummary`, decisions và tối đa 10 evidence references (`id,fact_key,source_url,checked_at,expires_at`); exclusions không trả private evidence content. Baseline hiện trả `partial` khi có candidates vì chưa dựng multi-role stack, `no_match` khi không còn candidate, hoặc `needs_clarification`; UI phải hiển thị rõ các limitations `keyword_only_retrieval`, `single_tool_candidates_not_stack`, `no_ai_extraction`. Không tự retry POST.
+
+### Full generation contract
 
 ### POST /api/v1/stack-generations
 

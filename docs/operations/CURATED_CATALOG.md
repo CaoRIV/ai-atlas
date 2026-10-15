@@ -109,7 +109,23 @@ if ($repeat.summary.added -ne 0 -or $repeat.summary.updated -ne 0 -or `
 
 Re-import cùng batch ngay sau import phải là `0/0/202` nếu không có concurrent edits hoặc freshness boundary. `as_of` trong report thay đổi là bình thường; timestamps/revisions trong DB không được đổi. Records omitted được giữ, tool relation arrays là complete sets. Import revalidate dưới lock trong transaction; dry-run không giữ lock cho command import sau đó.
 
-## 4. Chạy API và smoke thủ công
+## 4. Rebuild embeddings sau import
+
+Importer vẫn không gọi Gemini. Reindex là command maintainer riêng, có external usage/chi phí thật và chỉ chạy sau khi import đã thành công. Xác nhận đúng `DATABASE_URL`, model và dimension trước khi đặt key:
+
+```powershell
+$env:GEMINI_API_KEY = '<key>'
+$resultJson = .venv/Scripts/python.exe -m ai_atlas_api.reindex_cli --batch-size 32 --format json
+if ($LASTEXITCODE -ne 0) { $resultJson; throw 'Embedding reindex failed' }
+$result = $resultJson | ConvertFrom-Json
+$result.report
+```
+
+Document version 1 chỉ gồm public name, description, category labels và capability labels; text được normalize rồi SHA-256. `model_key` khóa provider/model/dimension/document version. Command chỉ embed published records thiếu row hoặc có content hash/source revision đổi; provider call nằm ngoài DB transaction, mỗi batch ghi bằng transaction ngắn và bỏ row nếu revision đổi trong lúc gọi provider. Import đã xóa embeddings của tool có projection đổi; reindex kế tiếp dựng lại chúng. Lượt chạy ngay sau đó phải có `embedded=0`, `stored=0` và `unchanged=total` nếu catalog/model không đổi.
+
+Exit 2 là CLI args sai; exit 3 là provider/config/database unavailable; exit 4 là config/internal error đã sanitize. Không coi partial report hoặc nonzero exit là thành công; không log document/vector/key. Không retry provider vô hạn. Exact vector retrieval chỉ đọc row có đúng current model/revision/hash; không có ANN index ở quy mô catalog hiện tại. Public Builder Lite không inject provider trước auth/quota nên vẫn trả keyword fallback; reindex không tự bật paid requests trên public route.
+
+## 5. Chạy API và smoke thủ công
 
 Terminal A, từ repo root, đặt cùng `PYTHONPATH`/`DATABASE_URL` đã import rồi chạy:
 
@@ -141,7 +157,8 @@ Với seed hiện tại: 8 categories; total=15/page_size=5; ChatGPT có officia
 
 Ctrl+C ở terminal A để dừng Uvicorn. Chỉ dừng container nếu không còn dùng: `docker compose down` giữ volume. Không cần dừng Docker container đang được task khác sử dụng.
 
-## 5. Import failure và freshness
+
+## 6. Import failure và freshness
 
 | Exit | Xử lý |
 |---|---|
@@ -161,4 +178,4 @@ Khi cần refresh:
 3. Nếu đổi value/status cần evidence mới cho fact revision mới; chỉ thêm nguồn cho claim/status không đổi thì không bump **fact revision**. Tool revision cũng giữ nguyên nếu tool metadata/relations không đổi; cập nhật `last_verified_at` ở bước 2 là thay đổi metadata nên tăng tool revision. Dry-run trên DB đích rồi review/import batch.
 4. Nếu chưa xác minh được, không giữ claim dưới nhãn verified bằng cách gia hạn giả. Có thể dùng unverified hoặc null/unknown đúng schema; phải bỏ capability/model relations không còn verified true. Published tool cần identity verified fresh; nếu không đáp ứng, chuyển draft/archived tường minh. Identity metadata/value phải đồng nhất.
 
-API hạ fact hết hạn thành unverified, nguồn cũ vẫn hiển thị ngày để minh bạch; không tự ghi lại DB hay tự archive tool. Importer không tự downgrade hoặc fetch nguồn. Synthetic fixtures, historical restore, embeddings và AI recommendations nằm ngoài quy trình này.
+API hạ fact hết hạn thành unverified, nguồn cũ vẫn hiển thị ngày để minh bạch; không tự ghi lại DB hay tự archive tool. Importer không tự downgrade hoặc fetch nguồn. Reindex embeddings chỉ chạy tường minh theo mục 4; synthetic fixtures, historical restore và AI recommendations nằm ngoài quy trình này.

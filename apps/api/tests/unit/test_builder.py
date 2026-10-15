@@ -7,6 +7,7 @@ from pydantic import ValidationError
 from ai_atlas_api.builder import BuilderLiteService, FactSnapshot, evaluate_constraints
 from ai_atlas_api.builder_models import BuilderConstraints, BuilderLiteRequest, EvidenceReference
 from ai_atlas_api.catalog import CatalogRepository
+from ai_atlas_api.retrieval import EmbeddingIndex, EmbeddingProfile, HybridRetriever
 
 
 def evidence(fact_key: str) -> EvidenceReference:
@@ -80,7 +81,13 @@ def test_budget_only_passes_a_provable_free_plan() -> None:
 
 
 def test_budget_without_usage_requests_clarification_before_database_access() -> None:
-    service = BuilderLiteService(CatalogRepository(None))
+    repository = CatalogRepository(None)
+    retriever = HybridRetriever(
+        EmbeddingIndex(repository),
+        EmbeddingProfile("google_gemini", "gemini-embedding-2", 1536),
+        None,
+    )
+    service = BuilderLiteService(repository, retriever)
     result = service.build(
         BuilderLiteRequest(
             objective="Find a writing assistant",

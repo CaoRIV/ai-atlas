@@ -29,9 +29,9 @@ Nếu chỉ có 4 tuần, mục tiêu khả thi là internal beta 40–60 tools 
 ## M2 — Dữ liệu và retrieval, tuần 2
 
 - **Mục tiêu:** dữ liệu có thể tìm theo capability và lọc constraints bằng code.
-- **Deliverables:** TASK-008A Builder Lite deterministic checkpoint đã Done; TASK-008, TASK-009 và TASK-012 khởi tạo eval fixtures vẫn thuộc M2; tiếp tục TASK-023 tới 40–60 tools dùng cho beta.
+- **Deliverables:** TASK-008A Builder Lite deterministic checkpoint và TASK-008 hybrid retrieval đã Done; TASK-009 và TASK-012 khởi tạo eval fixtures vẫn thuộc M2; tiếp tục TASK-023 tới 40–60 tools dùng cho beta.
 - **Dependencies:** M1; provider/dimension chốt ở TASK-001, fixtures từ TASK-005.
-- **Acceptance:** keyword baseline và hybrid có report Recall@5; unknown/stale không pass hard filter; index rebuild phát hiện revision; chưa cần UI AI hoàn thiện. Builder Lite chứng minh keyword → eligibility → evidence trên UI thật nhưng không được tính là hoàn tất hybrid retrieval, full stack cost hoặc generation.
+- **Acceptance:** hybrid engine đã có canonical hash, incremental rebuild, exact vector query, RRF và keyword fallback; Recall@5 còn chờ TASK-012, full constraint/cost còn chờ TASK-009. Unknown/stale không pass hard filter. Public Builder Lite giữ keyword fallback, không mở paid provider trước auth/quota và không được tính là full stack generation.
 - **Rủi ro:** curation là bottleneck, Vietnamese query retrieval kém. Ưu tiên coverage roles developers/students, đo trước khi đổi embedding model.
 - **DoD:** retrieval tests và deterministic constraint tests pass; dữ liệu verified có evidence, records thiếu facts để unknown.
 

@@ -15,6 +15,7 @@ from ai_atlas_api.catalog_models import ErrorBody, ErrorDetail, ErrorResponse
 from ai_atlas_api.catalog_routes import catalog_router
 from ai_atlas_api.config import Settings
 from ai_atlas_api.db import DatabaseReadiness, check_database_readiness
+from ai_atlas_api.retrieval import EmbeddingIndex, EmbeddingProfile, HybridRetriever
 
 ReadinessProbe = Callable[[str | None], Awaitable[DatabaseReadiness]]
 
@@ -98,8 +99,13 @@ def create_app(
         return error_response(request, 500, "INTERNAL_ERROR", "Đã xảy ra lỗi hệ thống.")
 
     repository = CatalogRepository(runtime_settings.database_url_value())
+    retriever = HybridRetriever(
+        EmbeddingIndex(repository),
+        EmbeddingProfile.from_settings(runtime_settings),
+        None,
+    )
     application.include_router(catalog_router(repository))
-    application.include_router(builder_router(BuilderLiteService(repository)))
+    application.include_router(builder_router(BuilderLiteService(repository, retriever)))
 
     @application.get("/health/live", response_model=LivenessResponse)
     async def liveness() -> LivenessResponse:

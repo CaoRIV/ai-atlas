@@ -106,7 +106,11 @@ export const BuilderLiteResultSchema = z
     exclusions: z.array(ExcludedCandidateSchema),
     data_gaps: z.array(DataGapSchema),
     limitations: z.array(
-      z.enum(["keyword_only_retrieval", "single_tool_candidates_not_stack", "no_ai_extraction"]),
+      z.enum([
+        "semantic_retrieval_unavailable",
+        "single_tool_candidates_not_stack",
+        "no_ai_extraction",
+      ]),
     ),
   })
   .strict();

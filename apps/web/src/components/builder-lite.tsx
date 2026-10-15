@@ -63,17 +63,18 @@ const copy = {
     deploymentCloud: "Cloud được phép",
     deploymentLocal: "Chỉ local",
     description:
-      "Baseline deterministic: tìm candidates bằng keyword và chỉ cho hard constraint đi qua khi catalog có evidence còn hiệu lực.",
+      "Baseline deterministic: kết hợp keyword/semantic retrieval khi embeddings khả dụng và chỉ cho hard constraint đi qua khi catalog có evidence còn hiệu lực.",
     evidence: "Evidence",
     example: "Dùng ví dụ",
     excluded: "Candidates bị loại",
     expires: "Hết hiệu lực",
     gaps: "Khoảng trống dữ liệu",
     heading: "Builder Lite",
-    internalBeta: "Internal beta · không dùng Gemini · chưa tạo stack hoàn chỉnh",
+    internalBeta: "Internal beta · Gemini chỉ dùng cho embeddings · chưa tạo stack hoàn chỉnh",
     limitationHeading: "Giới hạn của baseline",
     limitations: {
-      keyword_only_retrieval: "Chỉ dùng keyword retrieval, chưa có embeddings/RRF.",
+      semantic_retrieval_unavailable:
+        "Semantic retrieval tạm không khả dụng; kết quả đang dùng keyword fallback.",
       single_tool_candidates_not_stack: "Kết quả là candidates riêng lẻ, chưa phải stack nhiều vai trò.",
       no_ai_extraction: "Objective chưa được AI trích xuất thành roles hoặc workflow.",
     },
@@ -121,17 +122,18 @@ const copy = {
     deploymentCloud: "Cloud allowed",
     deploymentLocal: "Local only",
     description:
-      "Deterministic baseline: retrieves candidates by keyword and passes hard constraints only with current catalog evidence.",
+      "Deterministic baseline: combines keyword and semantic retrieval when embeddings are available, and passes hard constraints only with current catalog evidence.",
     evidence: "Evidence",
     example: "Use example",
     excluded: "Excluded candidates",
     expires: "Expires",
     gaps: "Data gaps",
     heading: "Builder Lite",
-    internalBeta: "Internal beta · no Gemini · does not build a complete stack yet",
+    internalBeta: "Internal beta · Gemini is used only for embeddings · no complete stack yet",
     limitationHeading: "Baseline limitations",
     limitations: {
-      keyword_only_retrieval: "Keyword retrieval only; embeddings/RRF are not enabled.",
+      semantic_retrieval_unavailable:
+        "Semantic retrieval is temporarily unavailable; results use keyword fallback.",
       single_tool_candidates_not_stack: "Results are individual candidates, not a multi-role stack.",
       no_ai_extraction: "The objective is not yet extracted into roles or a workflow by AI.",
     },

@@ -406,6 +406,11 @@ async def test_builder_lite_returns_only_verified_eligible_candidates(client: As
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["data"]["status"] == "partial"
+    assert body["data"]["limitations"] == [
+        "semantic_retrieval_unavailable",
+        "single_tool_candidates_not_stack",
+        "no_ai_extraction",
+    ]
     assert [item["tool"]["slug"] for item in body["data"]["candidates"]] == ["alpha"]
     assert [item["tool"]["slug"] for item in body["data"]["exclusions"]] == ["beta"]
     candidate = body["data"]["candidates"][0]

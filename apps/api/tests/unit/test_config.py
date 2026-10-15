@@ -1,4 +1,5 @@
-from pydantic import SecretStr
+import pytest
+from pydantic import SecretStr, ValidationError
 
 from ai_atlas_api.config import Settings
 from ai_atlas_api.providers.gemini import GeminiConfigurationError, GeminiProvider
@@ -13,6 +14,11 @@ def test_settings_can_start_without_a_gemini_key() -> None:
     assert settings.gemini_request_timeout_ms == 20_000
     assert settings.gemini_max_output_tokens == 2048
     assert settings.gemini_api_key is None
+
+
+def test_settings_reject_an_embedding_dimension_incompatible_with_storage() -> None:
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, embedding_dim=768)
 
 
 def test_settings_masks_the_gemini_key() -> None:

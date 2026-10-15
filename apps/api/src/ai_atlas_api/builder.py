@@ -1,9 +1,6 @@
-import re
 from dataclasses import dataclass, field
 from typing import Any, Literal
 from uuid import UUID
-
-from psycopg import sql
 
 from ai_atlas_api.builder_models import (
     BuilderCandidate,
@@ -19,6 +16,7 @@ from ai_atlas_api.builder_models import (
 )
 from ai_atlas_api.catalog import EFFECTIVE_FACTS, CatalogRepository
 from ai_atlas_api.catalog_models import ToolSummary
+from ai_atlas_api.retrieval import HybridRetriever
 
 EffectiveStatus = Literal["verified", "unverified", "unknown"]
 
@@ -34,6 +32,7 @@ class FactSnapshot:
 class CandidatePool:
     summaries: list[ToolSummary]
     facts: dict[UUID, dict[str, FactSnapshot]]
+    warnings: tuple[str, ...] = ()
 
 
 def _decision(
@@ -192,8 +191,9 @@ def evaluate_constraints(
 
 
 class BuilderLiteService:
-    def __init__(self, repository: CatalogRepository) -> None:
+    def __init__(self, repository: CatalogRepository, retriever: HybridRetriever) -> None:
         self.repository = repository
+        self.retriever = retriever
 
     def build(self, request: BuilderLiteRequest) -> BuilderLiteResult:
         if (
@@ -251,13 +251,13 @@ class BuilderLiteService:
             candidates=candidates,
             exclusions=exclusions,
             data_gaps=gaps,
-            limitations=self.limitations(),
+            limitations=self.limitations(pool.warnings),
         )
 
     @staticmethod
-    def limitations() -> list[str]:
+    def limitations(warnings: tuple[str, ...] = ()) -> list[str]:
         return [
-            "keyword_only_retrieval",
+            *warnings,
             "single_tool_candidates_not_stack",
             "no_ai_extraction",
         ]
@@ -279,31 +279,23 @@ class BuilderLiteService:
         return list(by_id.values())[:10]
 
     def _candidate_pool(self, objective: str) -> CandidatePool:
-        tokens = list(dict.fromkeys(re.findall(r"[^\W_]{2,}", objective.casefold())))[:20]
-        token_matches = [
-            sql.SQL("t.search_vector @@ plainto_tsquery('simple', %s)") for _ in tokens
-        ]
-        exact_match = sql.SQL("lower(t.name) = lower(%s) OR lower(t.slug) = lower(%s)")
-        conditions = [exact_match, *token_matches]
-        search_condition = sql.SQL(" OR ").join(conditions)
-        ranks = [
-            sql.SQL("ts_rank_cd(t.search_vector, plainto_tsquery('simple', %s))") for _ in tokens
-        ]
-        rank = sql.SQL(" + ").join(ranks) if ranks else sql.SQL("0")
+        retrieval = self.retriever.retrieve(objective)
+        if not retrieval.tool_ids:
+            return CandidatePool(summaries=[], facts={}, warnings=retrieval.warnings)
+
         with self.repository.connection() as connection:
             rows = connection.execute(
-                sql.SQL(
-                    "SELECT t.* FROM tools t "
-                    "WHERE t.publication_status = 'published' AND ({}) "
-                    "ORDER BY (CASE WHEN lower(t.name) = lower(%s) "
-                    "OR lower(t.slug) = lower(%s) THEN 1 ELSE 0 END) DESC, "
-                    "{} DESC, t.id ASC LIMIT 30"
-                ).format(search_condition, rank),
-                [objective, objective, *tokens, objective, objective, *tokens],
+                """SELECT t.* FROM tools t
+                   WHERE t.publication_status = 'published' AND t.id = ANY(%s)""",
+                (list(retrieval.tool_ids),),
             ).fetchall()
-            if not rows:
-                return CandidatePool(summaries=[], facts={})
-            summaries = self.repository.summaries(connection, rows)
+            row_by_id = {row["id"]: row for row in rows}
+            ordered_rows = [
+                row_by_id[tool_id] for tool_id in retrieval.tool_ids if tool_id in row_by_id
+            ]
+            if not ordered_rows:
+                return CandidatePool(summaries=[], facts={}, warnings=retrieval.warnings)
+            summaries = self.repository.summaries(connection, ordered_rows)
             tool_ids = [summary.id for summary in summaries]
             fact_rows = connection.execute(
                 EFFECTIVE_FACTS
@@ -336,4 +328,8 @@ class BuilderLiteService:
                         expires_at=row["expires_at"],
                     )
                 )
-        return CandidatePool(summaries=summaries, facts=facts)
+        return CandidatePool(
+            summaries=summaries,
+            facts=facts,
+            warnings=retrieval.warnings,
+        )

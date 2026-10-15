@@ -4,7 +4,7 @@
 
 AI Atlas là nền tảng khám phá AI tools và xây dựng AI stack theo mục tiêu, thiết bị và ngân sách của người dùng. Sản phẩm kết nối một thư viện được biên tập với hệ thống đề xuất có căn cứ, giúp trả lời: có công cụ nào, công cụ nào phù hợp và chúng kết hợp thành quy trình như thế nào?
 
-**Trạng thái ngày 13/10/2026:** TASK-001..007 và checkpoint TASK-008A Done. Discover Home/Explorer/tool detail vẫn freeze sau regression 007.5; Builder Lite tại `/builder` dùng keyword retrieval + deterministic fail-closed eligibility trên catalog thật, hiển thị evidence/data gaps và không gọi Gemini, auth, Save hoặc persistence. Frontend ESLint/typecheck/build và **35/35 Vitest** pass; backend Ruff/format/mypy, **212/212 unit** và **86/86 integration** pass. Actual browser smoke PostgreSQL/FastAPI/Next production kiểm `partial`, `needs_clarification`, link tool detail, vi/en, mobile 360px và axe 0 violations. Full hybrid retrieval/generation/stack vẫn theo TASK-008..013; không coi Builder Lite là full MVP Builder. Xem [API contract](docs/architecture/API_DESIGN.md), [backlog evidence](docs/planning/TASKS.md) và [local commands](LOCAL_COMMANDS.md).
+**Trạng thái ngày 15/10/2026:** TASK-001..008 và checkpoint TASK-008A Done. Discover Home/Explorer/tool detail vẫn freeze sau regression 007.5. TASK-008 đã thêm canonical embedding document v1 + content hash, incremental reindex CLI, exact pgvector retrieval và deterministic hybrid RRF; Builder Lite tại `/builder` dùng cùng retriever ở keyword fallback vì public beta chưa gọi provider AI trước auth/quota. Frontend ESLint/typecheck/build và **35/35 Vitest** pass; backend Ruff/format/mypy, **217/217 unit** và **89/89 integration** pass. Real PostgreSQL smoke xác nhận first reindex 15 records, lượt hai 15 unchanged, hybrid query không warning; browser smoke FastAPI/Next xác nhận fallback warning cùng candidates thật. TASK-009..015 vẫn cần cho full eligibility/cost/generation/stack; chưa đo AI quality hoặc Recall@5.
 
 ## Vấn đề và người dùng
 
@@ -24,7 +24,7 @@ So sánh nâng cao, workflow editor tương tác, multi-agent, scraping diện r
 - Mở <http://127.0.0.1:3000/builder> sau khi PostgreSQL, FastAPI và Next.js sẵn sàng theo `LOCAL_COMMANDS.md`.
 - API thật: `POST /api/v1/builder/candidates`; BFF: `POST /api/builder/candidates`. Request chỉ gồm `objective` và hard `constraints` đã định nghĩa; unknown fields/query parameters bị từ chối.
 - Candidate chỉ pass khi mọi hard constraint có fact verified + evidence fresh. Unknown/stale/unverified không bị đổi thành false/free/compatible; chúng xuất hiện trong exclusions/data gaps.
-- Kết quả có candidates vẫn là `partial` vì baseline chưa tạo roles/workflow/stack. Không có LLM usage, generation ID hoặc Save ở slice này.
+- Kết quả có candidates vẫn là `partial` vì baseline chưa tạo roles/workflow/stack. Public route không gọi provider AI và trả `semantic_retrieval_unavailable` khi dùng keyword fallback; không có generation ID hoặc Save ở slice này.
 
 ## Công nghệ và kiến trúc
 

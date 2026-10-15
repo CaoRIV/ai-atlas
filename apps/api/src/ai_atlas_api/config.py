@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     llm_model: str = "gemini-3.5-flash-lite"
     embedding_provider: Literal["google_gemini"] = "google_gemini"
     embedding_model: str = "gemini-embedding-2"
-    embedding_dim: int = Field(default=1536, gt=0)
+    embedding_dim: int = Field(default=1536, ge=1536, le=1536)
     gemini_api_key: SecretStr | None = None
     gemini_request_timeout_ms: int = Field(default=20_000, ge=1, le=30_000)
     gemini_max_output_tokens: int = Field(default=2048, ge=1)

@@ -30,6 +30,17 @@ export const DecisionReasonSchema = z.enum([
 ]);
 export type DecisionReason = z.infer<typeof DecisionReasonSchema>;
 
+const validDecisionReasons = {
+  pass: ["constraint_met"],
+  fail: ["constraint_not_met"],
+  unknown: [
+    "fact_missing",
+    "fact_not_verified",
+    "pricing_not_comparable",
+    "monthly_usage_required",
+  ],
+} as const;
+
 export const BuilderConstraintsSchema = z
   .object({
     platform: PlatformSchema.nullable().optional(),
@@ -38,9 +49,18 @@ export const BuilderConstraintsSchema = z
     offline_required: z.boolean().nullable().optional(),
     api_required: z.boolean().nullable().optional(),
     budget_usd_month: z.number().nonnegative().max(1_000_000).nullable().optional(),
-    monthly_usage: z.string().min(1).max(1000).nullable().optional(),
+    monthly_usage: z.string().trim().min(1).max(1000).nullable().optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((constraints, context) => {
+    if (constraints.monthly_usage != null && constraints.budget_usd_month == null) {
+      context.addIssue({
+        code: "custom",
+        message: "monthly_usage_requires_budget",
+        path: ["monthly_usage"],
+      });
+    }
+  });
 export type BuilderConstraints = z.infer<typeof BuilderConstraintsSchema>;
 
 export const BuilderLiteRequestSchema = z
@@ -69,8 +89,25 @@ export const ConstraintDecisionSchema = z
     fact_key: z.string().nullable(),
     evidence_ids: z.array(z.string()),
   })
-  .strict();
-
+  .strict()
+  .superRefine((decision, context) => {
+    if (
+      !(validDecisionReasons[decision.outcome] as readonly string[]).includes(decision.reason)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "decision_reason_does_not_match_outcome",
+        path: ["reason"],
+      });
+    }
+    if (decision.outcome === "unknown" && decision.evidence_ids.length > 0) {
+      context.addIssue({
+        code: "custom",
+        message: "unknown_decision_cannot_claim_evidence",
+        path: ["evidence_ids"],
+      });
+    }
+  });
 export const BuilderCandidateSchema = z
   .object({
     tool: ToolSummarySchema,

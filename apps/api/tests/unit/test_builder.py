@@ -5,8 +5,9 @@ import pytest
 from pydantic import ValidationError
 
 from ai_atlas_api.builder import BuilderLiteService, FactSnapshot, evaluate_constraints
-from ai_atlas_api.builder_models import BuilderConstraints, BuilderLiteRequest, EvidenceReference
+from ai_atlas_api.builder_models import BuilderLiteRequest, EvidenceReference
 from ai_atlas_api.catalog import CatalogRepository
+from ai_atlas_api.constraints import BuilderConstraints
 from ai_atlas_api.retrieval import EmbeddingIndex, EmbeddingProfile, HybridRetriever
 
 

@@ -4,18 +4,20 @@ from uuid import UUID
 
 from ai_atlas_api.builder_models import (
     BuilderCandidate,
-    BuilderConstraints,
     BuilderLiteRequest,
     BuilderLiteResult,
-    ConstraintDecision,
-    ConstraintName,
     DataGap,
-    DecisionReason,
     EvidenceReference,
     ExcludedCandidate,
 )
 from ai_atlas_api.catalog import EFFECTIVE_FACTS, CatalogRepository
 from ai_atlas_api.catalog_models import ToolSummary
+from ai_atlas_api.constraints import (
+    BuilderConstraints,
+    ConstraintDecision,
+    ConstraintName,
+    DecisionReason,
+)
 from ai_atlas_api.retrieval import HybridRetriever
 
 EffectiveStatus = Literal["verified", "unverified", "unknown"]

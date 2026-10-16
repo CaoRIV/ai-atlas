@@ -1,55 +1,26 @@
 import unicodedata
 from datetime import datetime
-from typing import Literal, Self
+from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from ai_atlas_api.catalog_models import Platform, ToolSummary
+from ai_atlas_api.catalog_models import ToolSummary
+from ai_atlas_api.constraints import BuilderConstraints as _BuilderConstraints
+from ai_atlas_api.constraints import ConstraintDecision as _ConstraintDecision
+from ai_atlas_api.constraints import ConstraintName as _ConstraintName
+from ai_atlas_api.constraints import DecisionReason as _DecisionReason
 
 BuilderStatus = Literal["complete", "partial", "no_match", "needs_clarification"]
-ConstraintName = Literal[
-    "platform",
-    "ram_gb",
-    "deployment",
-    "offline_required",
-    "api_required",
-    "budget_usd_month",
-]
-DecisionOutcome = Literal["pass", "fail", "unknown"]
-DecisionReason = Literal[
-    "constraint_met",
-    "constraint_not_met",
-    "fact_missing",
-    "fact_not_verified",
-    "pricing_not_comparable",
-    "monthly_usage_required",
-]
 
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
 
-class BuilderConstraints(StrictModel):
-    platform: Platform | None = None
-    ram_gb: float | None = Field(default=None, gt=0, le=1024)
-    deployment: Literal["cloud_allowed", "local_only"] | None = None
-    offline_required: bool | None = None
-    api_required: bool | None = None
-    budget_usd_month: float | None = Field(default=None, ge=0, le=1_000_000)
-    monthly_usage: str | None = Field(default=None, min_length=1, max_length=1000)
-
-    @model_validator(mode="after")
-    def reject_usage_without_budget(self) -> Self:
-        if self.monthly_usage is not None and self.budget_usd_month is None:
-            raise ValueError("monthly_usage_requires_budget")
-        return self
-
-
 class BuilderLiteRequest(StrictModel):
     objective: str = Field(min_length=10, max_length=4000)
-    constraints: BuilderConstraints = Field(default_factory=BuilderConstraints)
+    constraints: _BuilderConstraints = Field(default_factory=_BuilderConstraints)
 
     @field_validator("objective", mode="before")
     @classmethod
@@ -65,30 +36,22 @@ class EvidenceReference(StrictModel):
     expires_at: datetime
 
 
-class ConstraintDecision(StrictModel):
-    constraint: ConstraintName
-    outcome: DecisionOutcome
-    reason: DecisionReason
-    fact_key: str | None
-    evidence_ids: list[UUID] = Field(default_factory=list)
-
-
 class BuilderCandidate(StrictModel):
     tool: ToolSummary
-    decisions: list[ConstraintDecision]
+    decisions: list[_ConstraintDecision]
     evidence: list[EvidenceReference]
 
 
 class ExcludedCandidate(StrictModel):
     tool: ToolSummary
-    decisions: list[ConstraintDecision]
+    decisions: list[_ConstraintDecision]
 
 
 class DataGap(StrictModel):
     tool_id: UUID | None
     tool_name: str | None
-    constraint: ConstraintName
-    reason: DecisionReason
+    constraint: _ConstraintName
+    reason: _DecisionReason
 
 
 class BuilderLiteResult(StrictModel):
